@@ -1,0 +1,1491 @@
+From a50c0a226d769fade483104c95fb55ebba6ca0de Mon Sep 17 00:00:00 2001
+From: Andreas Pokorny <andreas.pokorny@canonical.com>
+Date: Mon, 2 Nov 2015 16:13:40 +0100
+Subject: [PATCH libinput 1/4] libinput: add orientation and size of touch
+ point and pressure to the API
+
+This change adds four new properties to touch events:
+* major: diameter of the touch ellipse along the major axis
+* minor: diameter perpendicular to major axis
+* pressure: a pressure value mapped into the range [0, 1]
+* orientation: the angle between major and the x axis [0, 360]
+
+Those values are optionally supported by multi-touch drivers, so default values
+are used if the information is missing. The existance of each of the properties
+can be queried at the event using another set of libinput_event_touch_has_*
+functions.
+
+Explanation of those values was added to the touch screen page.
+
+Signed-off-by: Andreas Pokorny <andreas.pokorny@canonical.com>
+---
+ doc/Makefile.am                                |   2 +
+ doc/page-hierarchy.dox                         |   1 +
+ doc/svg/touchscreen-touch-event-properties.svg | 347 +++++++++++++++++++++++++
+ doc/touch-event-properties.dox                 |  42 +++
+ src/evdev.c                                    | 169 +++++++++++-
+ src/evdev.h                                    |  25 ++
+ src/libinput-private.h                         |  13 +-
+ src/libinput.c                                 | 212 ++++++++++++++-
+ src/libinput.h                                 | 222 ++++++++++++++++
+ src/libinput.sym                               |  13 +
+ test/test-touch.c                              | 242 +++++++++++++++++
+ 11 files changed, 1278 insertions(+), 10 deletions(-)
+ create mode 100644 doc/svg/touchscreen-touch-event-properties.svg
+ create mode 100644 doc/touch-event-properties.dox
+
+--- /dev/null
++++ b/doc/svg/touchscreen-touch-event-properties.svg
+@@ -0,0 +1,347 @@
++<?xml version="1.0" encoding="UTF-8" standalone="no"?>
++<!-- Created with Inkscape (http://www.inkscape.org/) -->
++
++<svg
++   xmlns:dc="http://purl.org/dc/elements/1.1/"
++   xmlns:cc="http://creativecommons.org/ns#"
++   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
++   xmlns:svg="http://www.w3.org/2000/svg"
++   xmlns="http://www.w3.org/2000/svg"
++   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
++   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
++   width="81.778557mm"
++   height="107.62305mm"
++   viewBox="0 0 289.76655 381.34154"
++   id="svg2"
++   version="1.1"
++   inkscape:version="0.91 r13725"
++   sodipodi:docname="touchscreen-touch-event-properties.svg">
++  <defs
++     id="defs4">
++    <marker
++       inkscape:stockid="DotL"
++       orient="auto"
++       refY="0"
++       refX="0"
++       id="DotL"
++       style="overflow:visible"
++       inkscape:isstock="true">
++      <path
++         id="path4259"
++         d="m -2.5,-1 c 0,2.76 -2.24,5 -5,5 -2.76,0 -5,-2.24 -5,-5 0,-2.76 2.24,-5 5,-5 2.76,0 5,2.24 5,5 z"
++         style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1"
++         transform="matrix(0.8,0,0,0.8,5.92,0.8)"
++         inkscape:connector-curvature="0" />
++    </marker>
++    <marker
++       inkscape:stockid="CurveOut"
++       orient="auto"
++       refY="0"
++       refX="0"
++       id="CurveOut"
++       style="overflow:visible"
++       inkscape:isstock="true">
++      <path
++         id="path4385"
++         d="m -5.4129913,-5.0456926 c 2.76,0 4.99999999,2.24 4.99999999,5.00000002 0,2.75999998 -2.23999999,4.99999998 -4.99999999,4.99999998"
++         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1"
++         transform="scale(0.6,0.6)"
++         inkscape:connector-curvature="0" />
++    </marker>
++    <marker
++       inkscape:stockid="StopL"
++       orient="auto"
++       refY="0"
++       refX="0"
++       id="StopL"
++       style="overflow:visible"
++       inkscape:isstock="true">
++      <path
++         id="path4367"
++         d="M 0,5.65 0,-5.65"
++         style="fill:none;fill-opacity:0.75;fill-rule:evenodd;stroke:#000000;stroke-width:1pt;stroke-opacity:1"
++         transform="scale(0.8,0.8)"
++         inkscape:connector-curvature="0" />
++    </marker>
++    <marker
++       style="overflow:visible"
++       id="DistanceStart"
++       refX="0"
++       refY="0"
++       orient="auto"
++       inkscape:stockid="DistanceStart"
++       inkscape:isstock="true">
++      <g
++         id="g2300"
++         style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-opacity:1">
++        <path
++           style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1.14999998;stroke-linecap:square;stroke-opacity:1"
++           d="M 0,0 2,0"
++           id="path2306"
++           inkscape:connector-curvature="0" />
++        <path
++           style="fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-opacity:1"
++           d="M 0,0 13,4 9,0 13,-4 0,0 Z"
++           id="path2302"
++           inkscape:connector-curvature="0" />
++        <path
++           style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:square;stroke-opacity:1"
++           d="M 0,-4 0,40"
++           id="path2304"
++           inkscape:connector-curvature="0" />
++      </g>
++    </marker>
++    <marker
++       inkscape:stockid="Arrow2Mend"
++       orient="auto"
++       refY="0"
++       refX="0"
++       id="Arrow2Mend"
++       style="overflow:visible"
++       inkscape:isstock="true">
++      <path
++         id="path4225"
++         style="fill:#cb004e;fill-opacity:1;fill-rule:evenodd;stroke:#cb004e;stroke-width:0.625;stroke-linejoin:round;stroke-opacity:1"
++         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
++         transform="scale(-0.6,-0.6)"
++         inkscape:connector-curvature="0" />
++    </marker>
++    <marker
++       inkscape:stockid="Arrow2Lend"
++       orient="auto"
++       refY="0"
++       refX="0"
++       id="Arrow2Lend"
++       style="overflow:visible"
++       inkscape:isstock="true">
++      <path
++         id="path4219"
++         style="fill:#cb004e;fill-opacity:1;fill-rule:evenodd;stroke:#cb004e;stroke-width:0.625;stroke-linejoin:round;stroke-opacity:1"
++         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
++         transform="matrix(-1.1,0,0,-1.1,-1.1,0)"
++         inkscape:connector-curvature="0" />
++    </marker>
++    <marker
++       inkscape:stockid="TriangleInL"
++       orient="auto"
++       refY="0"
++       refX="0"
++       id="TriangleInL"
++       style="overflow:visible"
++       inkscape:isstock="true">
++      <path
++         id="path4331"
++         d="m 5.77,0 -8.65,5 0,-10 8.65,5 z"
++         style="fill:#b3b3b3;fill-opacity:1;fill-rule:evenodd;stroke:#b3b3b3;stroke-width:1pt;stroke-opacity:1"
++         transform="scale(-0.8,-0.8)"
++         inkscape:connector-curvature="0" />
++    </marker>
++    <marker
++       inkscape:stockid="Arrow2Lstart"
++       orient="auto"
++       refY="0"
++       refX="0"
++       id="Arrow2Lstart"
++       style="overflow:visible"
++       inkscape:isstock="true">
++      <path
++         id="path4216"
++         style="fill:#cb004e;fill-opacity:1;fill-rule:evenodd;stroke:#cb004e;stroke-width:0.625;stroke-linejoin:round;stroke-opacity:1"
++         d="M 8.7185878,4.0337352 -2.2072895,0.01601326 8.7185884,-4.0017078 c -1.7454984,2.3720609 -1.7354408,5.6174519 -6e-7,8.035443 z"
++         transform="matrix(1.1,0,0,1.1,1.1,0)"
++         inkscape:connector-curvature="0" />
++    </marker>
++    <inkscape:path-effect
++       effect="powerstroke"
++       id="path-effect4140"
++       is_visible="true"
++       offset_points="0,0.5"
++       sort_points="true"
++       interpolator_type="Linear"
++       interpolator_beta="0.2"
++       start_linecap_type="zerowidth"
++       linejoin_type="round"
++       miter_limit="4"
++       end_linecap_type="zerowidth"
++       cusp_linecap_type="round" />
++    <marker
++       inkscape:stockid="TriangleInL"
++       orient="auto"
++       refY="0"
++       refX="0"
++       id="TriangleInL-1"
++       style="overflow:visible"
++       inkscape:isstock="true">
++      <path
++         inkscape:connector-curvature="0"
++         id="path4331-8"
++         d="m 5.77,0 -8.65,5 0,-10 8.65,5 z"
++         style="fill:#b3b3b3;fill-opacity:1;fill-rule:evenodd;stroke:#b3b3b3;stroke-width:1pt;stroke-opacity:1"
++         transform="scale(-0.8,-0.8)" />
++    </marker>
++    <marker
++       inkscape:stockid="TriangleInL"
++       orient="auto"
++       refY="0"
++       refX="0"
++       id="TriangleInL-1-3"
++       style="overflow:visible"
++       inkscape:isstock="true">
++      <path
++         inkscape:connector-curvature="0"
++         id="path4331-8-7"
++         d="m 5.77,0 -8.65,5 0,-10 8.65,5 z"
++         style="fill:#b3b3b3;fill-opacity:1;fill-rule:evenodd;stroke:#b3b3b3;stroke-width:1pt;stroke-opacity:1"
++         transform="scale(-0.8,-0.8)" />
++    </marker>
++  </defs>
++  <sodipodi:namedview
++     id="base"
++     pagecolor="#ffffff"
++     bordercolor="#666666"
++     borderopacity="1.0"
++     inkscape:pageopacity="0.0"
++     inkscape:pageshadow="2"
++     inkscape:zoom="0.99999999"
++     inkscape:cx="123.83444"
++     inkscape:cy="279.21547"
++     inkscape:document-units="px"
++     inkscape:current-layer="layer1"
++     showgrid="false"
++     showguides="false"
++     inkscape:window-width="2560"
++     inkscape:window-height="1056"
++     inkscape:window-x="0"
++     inkscape:window-y="24"
++     inkscape:window-maximized="1"
++     fit-margin-top="0"
++     fit-margin-left="0"
++     fit-margin-right="0"
++     fit-margin-bottom="0" />
++  <metadata
++     id="metadata7">
++    <rdf:RDF>
++      <cc:Work
++         rdf:about="">
++        <dc:format>image/svg+xml</dc:format>
++        <dc:type
++           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
++        <dc:title></dc:title>
++      </cc:Work>
++    </rdf:RDF>
++  </metadata>
++  <g
++     inkscape:label="Layer 1"
++     inkscape:groupmode="layer"
++     id="layer1"
++     transform="translate(-99.549825,-70.836892)">
++    <path
++       style="fill:#b3b3b3;fill-opacity:1;fill-rule:evenodd;stroke:#b3b3b3;stroke-width:1.79780054px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#TriangleInL-1-3)"
++       d="m 231.28087,80.931744 -0.008,371.246666"
++       id="path4144-1-8-1"
++       inkscape:connector-curvature="0"
++       sodipodi:nodetypes="cc" />
++    <g
++       id="g6309"
++       inkscape:transform-center-x="-9.527809"
++       inkscape:transform-center-y="-8.1612127"
++       transform="matrix(1.171972,1.3632932,-1.3632932,1.171972,275.33248,-179.00364)">
++      <path
++         sodipodi:nodetypes="cc"
++         inkscape:connector-curvature="0"
++         id="path4144-1-8"
++         d="m 172.88767,70.631028 -0.004,206.500482"
++         style="fill:#b3b3b3;fill-opacity:1;fill-rule:evenodd;stroke:#b3b3b3;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-start:url(#TriangleInL-1)" />
++      <ellipse
++         ry="77.321434"
++         rx="45.89286"
++         cy="180.93364"
++         cx="172.85715"
++         id="path4136"
++         style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
++      <path
++         sodipodi:nodetypes="cc"
++         inkscape:connector-curvature="0"
++         id="path4142"
++         d="m 126.9449,180.93396 91.84596,0.007"
++         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
++      <path
++         sodipodi:nodetypes="cc"
++         inkscape:connector-curvature="0"
++         id="path4144"
++         d="m 172.84766,103.6564 -0.004,154.59727"
++         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1" />
++      <text
++         sodipodi:linespacing="125%"
++         id="text4146"
++         y="188.01213"
++         x="128.08986"
++         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.5px;line-height:125%;font-family:sans-serif;-inkscape-font-specification:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
++         xml:space="preserve"><tspan
++           y="188.01213"
++           x="128.08986"
++           id="tspan4148"
++           sodipodi:role="line">minor axis</tspan></text>
++      <text
++         transform="matrix(0,-1,1,0,0,0)"
++         sodipodi:linespacing="125%"
++         id="text4150"
++         y="169.33234"
++         x="-256.35562"
++         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:7.5px;line-height:125%;font-family:sans-serif;-inkscape-font-specification:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
++         xml:space="preserve"><tspan
++           y="169.33234"
++           x="-256.35562"
++           id="tspan4152"
++           sodipodi:role="line">major axis</tspan></text>
++    </g>
++    <text
++       xml:space="preserve"
++       style="font-style:normal;font-weight:normal;font-size:71.91202545px;line-height:125%;font-family:Sans;letter-spacing:0px;word-spacing:0px;fill:#b3b3b3;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
++       x="44.285629"
++       y="369.12045"
++       id="text6877"
++       sodipodi:linespacing="125%"
++       transform="matrix(0.76306478,-0.64632201,0.64632201,0.76306478,0,0)"><tspan
++         sodipodi:role="line"
++         id="tspan6879"
++         x="44.285629"
++         y="369.12045"
++         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.4835043px;font-family:sans-serif;-inkscape-font-specification:sans-serif;fill:#b3b3b3;fill-opacity:1">pointing direction</tspan></text>
++    <text
++       xml:space="preserve"
++       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:13.4835043px;line-height:125%;font-family:sans-serif;-inkscape-font-specification:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#b3b3b3;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
++       x="237.00804"
++       y="99.788658"
++       id="text6887"
++       sodipodi:linespacing="125%"><tspan
++         sodipodi:role="line"
++         id="tspan6889"
++         x="237.00804"
++         y="99.788658">y axis</tspan></text>
++    <path
++       style="fill:none;fill-opacity:1;stroke:#cb004e;stroke-width:1.79780054;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Mend)"
++       id="path7011"
++       sodipodi:type="arc"
++       sodipodi:cx="231.14914"
++       sodipodi:cy="268.54077"
++       sodipodi:rx="79.092262"
++       sodipodi:ry="79.092262"
++       sodipodi:start="4.7157629"
++       sodipodi:end="5.5461565"
++       d="m 231.41599,189.44896 a 79.092262,79.092262 0 0 1 58.2985,25.93463"
++       sodipodi:open="true" />
++    <text
++       xml:space="preserve"
++       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:8.98900318px;line-height:125%;font-family:sans-serif;-inkscape-font-specification:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#cb004e;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
++       x="232.66777"
++       y="184.40468"
++       id="text7119"
++       sodipodi:linespacing="125%"><tspan
++         sodipodi:role="line"
++         id="tspan7121"
++         x="232.66777"
++         y="184.40468"
++         style="font-size:13.4835043px;fill:#cb004e;fill-opacity:1">orientation</tspan></text>
++  </g>
++</svg>
+--- /dev/null
++++ b/doc/touch-event-properties.dox
+@@ -0,0 +1,42 @@
++/**
++@page touch_event_properties Properties of a touch event
++
++This page gives some overview on touchscreen events. With libinput touchscreens
++provide the event types @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref LIBINPUT_EVENT_TOUCH_UP,
++@ref LIBINPUT_EVENT_TOUCH_MOTION and @ref LIBINPUT_EVENT_TOUCH_CANCEL. The
++touchscreen events @ref LIBINPUT_EVENT_TOUCH_DOWN and
++@ref LIBINPUT_EVENT_TOUCH_MOTION provide alongside the actual state change and
++the absolute coordinates (@ref absolute_axes_handling) additional information
++about the touch contact.
++
++@image html touchscreen-touch-event-properties.svg "Properties of a touch screen contact"
++
++Assuming the interaction of fingers with a touch screen, touch contacts are
++approximated with an ellipse. The major axis of the ellipse describes the
++pointing direction of the finger. The minor axis is the perpendicular
++extent of the touching shape. The orientation angle is the clockwise rotation of
++the pointing direction against the y-axis of the touchscreen.
++
++Additionally to the values shown in the drawing above, most touchscreens also
++provide a pressure value to indicate the force applied with the contact point.
++
++The support for those contact properties varies between the different
++available touchscreens. In the case of pressure libinput will return the
++maximum pressure value, which is 1.0. If only the major axis but no minor axis
++is present, libinput will assume a circular shape and return the major axis
++value for convenience. If also no major axis value is known 0.0 is returned.
++If the orientation is not available libinput will return 0.0 degrees.
++
++For querying the touch properties see:
++- libinput_event_touch_get_major_transformed()
++- libinput_event_touch_get_minor_transformed()
++- libinput_event_touch_get_orientation()
++- libinput_event_touch_get_pressure()
++
++For testing which of the touch properties are available see:
++- libinput_event_touch_has_major()
++- libinput_event_touch_has_minor()
++- libinput_event_touch_has_orientation()
++- libinput_event_touch_has_pressure()
++
++*/
+--- a/src/evdev-fallback.c
++++ b/src/evdev-fallback.c
+@@ -29,7 +29,12 @@
+ 
+ #include <mtdev-plumbing.h>
+ 
+ #include "evdev-fallback.h"
++
++#define DEFAULT_TOUCH_PRESSURE 1.0
++#define DEFAULT_TOUCH_ORIENTATION 0.0
++#define DEFAULT_TOUCH_MAJOR 0.0
++#define DEFAULT_TOUCH_MINOR 0.0
+ 
+ static void
+ fallback_keyboard_notify_key(struct fallback_dispatch *dispatch,
+@@ -512,7 +611,8 @@ fallback_flush_mt_down(struct fallback_d
+ 	evdev_transform_absolute(device, &point);
+ 
+ 	touch_notify_touch_down(base, time, slot_idx, seat_slot,
+-				&point);
++				&point, &slot->area, slot->pressure);
++
+ 
+ 	return true;
+ }
+@@ -543,7 +643,7 @@ fallback_flush_mt_motion(struct fallback
+ 
+ 	evdev_transform_absolute(device, &point);
+ 	touch_notify_touch_motion(base, time, slot_idx, seat_slot,
+-				  &point);
++				  &point, &slot->area, slot->pressure);
+ 
+ 	return true;
+ }
+@@ -584,6 +684,11 @@ fallback_flush_st_down(struct fallback_d
+ 	struct libinput_device *base = &device->base;
+ 	struct libinput_seat *seat = base->seat;
+ 	struct device_coords point;
++	struct ellipse default_area = {
++		.major = DEFAULT_TOUCH_MAJOR,
++		.minor = DEFAULT_TOUCH_MINOR,
++		.orientation = DEFAULT_TOUCH_ORIENTATION,
++	};
+ 	int seat_slot;
+ 
+ 	if (!(device->seat_caps & EVDEV_DEVICE_TOUCH))
+@@ -610,7 +715,8 @@ fallback_flush_st_down(struct fallback_d
+ 	point = dispatch->abs.point;
+ 	evdev_transform_absolute(device, &point);
+ 
+-	touch_notify_touch_down(base, time, -1, seat_slot, &point);
++	touch_notify_touch_down(base, time, -1, seat_slot, &point,
++				&default_area, DEFAULT_TOUCH_PRESSURE);
+ 
+ 	return true;
+ }
+@@ -622,6 +728,11 @@ fallback_flush_st_motion(struct fallback
+ {
+ 	struct libinput_device *base = &device->base;
+ 	struct device_coords point;
++	struct ellipse default_area = {
++		.major = DEFAULT_TOUCH_MAJOR,
++		.minor = DEFAULT_TOUCH_MINOR,
++		.orientation = DEFAULT_TOUCH_ORIENTATION,
++	};
+ 	int seat_slot;
+ 
+ 	point = dispatch->abs.point;
+@@ -632,7 +743,8 @@ fallback_flush_st_motion(struct fallback
+ 	if (seat_slot == -1)
+ 		return false;
+ 
+-	touch_notify_touch_motion(base, time, -1, seat_slot, &point);
++	touch_notify_touch_motion(base, time, -1, seat_slot, &point,
++				  &default_area, DEFAULT_TOUCH_PRESSURE);
+ 
+ 	return true;
+ }
+--- a/src/evdev.c
++++ b/src/evdev.c
+@@ -49,6 +49,10 @@
+ 
+ #define DEFAULT_WHEEL_CLICK_ANGLE 15
+ #define DEFAULT_BUTTON_SCROLL_TIMEOUT ms2us(200)
++#define DEFAULT_TOUCH_PRESSURE 1.0
++#define DEFAULT_TOUCH_ORIENTATION 0.0
++#define DEFAULT_TOUCH_MAJOR 0.0
++#define DEFAULT_TOUCH_MINOR 0.0
+ 
+ enum evdev_device_udev_tags {
+         EVDEV_UDEV_TAG_INPUT = (1 << 0),
+@@ -343,6 +347,100 @@ evdev_device_transform_y(struct evdev_de
+ 	return scale_axis(device->abs.absinfo_y, y, height);
+ }
+ 
++double
++evdev_device_transform_ellipse_diameter_to_mm(struct evdev_device *device,
++					      int diameter,
++					      double axis_angle)
++{
++	double x_res = device->abs.absinfo_x->resolution;
++	double y_res = device->abs.absinfo_y->resolution;
++
++	if (x_res == y_res)
++		return diameter / x_res;
++
++	/* resolution differs but no orientation available
++	 * -> estimate resolution using the average */
++	if (device->abs.absinfo_orientation == NULL) {
++		return diameter * 2.0 / (x_res + y_res);
++	} else {
++		/* Why scale x using sine of angle?
++		 * axis_angle = 0 indicates that the given diameter
++		 * is aligned with the y-axis. */
++		double x_scaling_ratio = fabs(sin(deg2rad(axis_angle)));
++		double y_scaling_ratio = fabs(cos(deg2rad(axis_angle)));
++
++		return diameter / hypotf(y_res * y_scaling_ratio,
++					 x_res * x_scaling_ratio);
++	}
++}
++
++double
++evdev_device_transform_ellipse_diameter(struct evdev_device *device,
++					int diameter,
++					double axis_angle,
++					uint32_t width,
++					uint32_t height)
++{
++	double x_res = device->abs.absinfo_x->resolution;
++	double y_res = device->abs.absinfo_y->resolution;
++	double x_scale = width / (device->abs.dimensions.x + 1.0);
++	double y_scale = height / (device->abs.dimensions.y + 1.0);
++
++	if (x_res == y_res)
++		return diameter * x_scale;
++
++	/* no orientation available -> estimate resolution using the
++	 * average */
++	if (device->abs.absinfo_orientation == NULL) {
++		return diameter * (x_scale + y_scale) / 2.0;
++	} else {
++		/* Why scale x using sine of angle?
++		 * axis_angle = 0 indicates that the given diameter
++		 * is aligned with the y-axis. */
++		double x_scaling_ratio = fabs(sin(deg2rad(axis_angle)));
++		double y_scaling_ratio = fabs(cos(deg2rad(axis_angle)));
++
++		return diameter * (y_scale * y_scaling_ratio +
++				   x_scale * x_scaling_ratio);
++	}
++}
++
++double
++evdev_device_transform_orientation(struct evdev_device *device,
++				   int32_t orientation)
++{
++	const struct input_absinfo *orientation_info =
++					device->abs.absinfo_orientation;
++
++	double angle = DEFAULT_TOUCH_ORIENTATION;
++
++	/* ABS_MT_ORIENTATION is defined as a clockwise rotation - zero
++	 * (instead of minimum) is mapped to the y-axis, and maximum is
++	 * mapped to the x-axis. So minimum is likely to be negative but
++	 * plays no role in scaling the value to degrees.*/
++	if (orientation_info)
++		angle = (90.0 * orientation) / orientation_info->maximum;
++
++	return fmod(360.0 + angle, 360.0);
++}
++
++double
++evdev_device_transform_pressure(struct evdev_device *device,
++				int32_t pressure)
++{
++	const struct input_absinfo *pressure_info =
++					device->abs.absinfo_pressure;
++
++	if (pressure_info) {
++		double max_pressure = pressure_info->maximum;
++		double min_pressure = pressure_info->minimum;
++		return (pressure - min_pressure) /
++					(max_pressure - min_pressure);
++	} else {
++		return DEFAULT_TOUCH_PRESSURE;
++	}
++}
++
+ void
+ evdev_notify_axis(struct evdev_device *device,
+ 		uint64_t time,
+@@ -2545,6 +2693,15 @@ evdev_configure_device(struct evdev_devi
+ 		return NULL;
+ 	}
+ 
++	device->abs.absinfo_orientation =
++		libevdev_get_abs_info(evdev, ABS_MT_ORIENTATION);
++	device->abs.absinfo_pressure =
++		libevdev_get_abs_info(evdev, ABS_MT_PRESSURE);
++	device->abs.absinfo_major =
++		libevdev_get_abs_info(evdev, ABS_MT_TOUCH_MAJOR);
++	device->abs.absinfo_minor =
++		libevdev_get_abs_info(evdev, ABS_MT_TOUCH_MINOR);
++
+ 	evdev_log_info(device,
+ 		"is tagged by udev as:%s%s%s%s%s%s%s%s%s%s%s\n",
+ 		udev_tags & EVDEV_UDEV_TAG_KEYBOARD ? " Keyboard" : "",
+--- a/src/evdev-fallback.h
++++ b/src/evdev-fallback.h
+@@ -130,7 +130,9 @@ struct mt_slot {
+ 	int32_t seat_slot;
+ 	struct device_coords point;
+ 	struct device_coords hysteresis_center;
+ 	enum palm_state palm_state;
++	struct ellipse area;
++	int32_t pressure;
+ };
+ 
+ struct fallback_dispatch {
+--- a/src/evdev.h
++++ b/src/evdev.h
+@@ -156,6 +158,8 @@ struct evdev_device {
+ 
+ 	struct {
+ 		const struct input_absinfo *absinfo_x, *absinfo_y;
++		const struct input_absinfo *absinfo_major, *absinfo_minor,
++		      *absinfo_pressure, *absinfo_orientation;
+ 		bool is_fake_resolution;
+ 
+ 		int apply_calibration;
+@@ -448,6 +452,27 @@ double
+ evdev_device_transform_y(struct evdev_device *device,
+ 			 double y,
+ 			 uint32_t height);
++
++double
++evdev_device_transform_ellipse_diameter_to_mm(struct evdev_device *device,
++					      int32_t diameter,
++					      double axis_angle);
++
++double
++evdev_device_transform_ellipse_diameter(struct evdev_device *device,
++					int32_t diameter,
++					double axis_angle,
++					uint32_t width,
++					uint32_t height);
++
++double
++evdev_device_transform_orientation(struct evdev_device *device,
++				   int32_t orientation);
++
++double
++evdev_device_transform_pressure(struct evdev_device *device,
++				int32_t pressure);
++
+ void
+ evdev_device_suspend(struct evdev_device *device);
+ 
+--- a/src/libinput-private.h
++++ b/src/libinput-private.h
+@@ -49,6 +49,11 @@ struct device_coords {
+ 	int x, y;
+ };
+ 
++/* Ellipse parameters in device coordinates */
++struct ellipse {
++	int major, minor, orientation;
++};
++
+ /*
+  * A coordinate pair in device coordinates, capable of holding non discrete
+  * values, this is necessary e.g. when device coordinates get averaged.
+@@ -515,14 +520,18 @@ touch_notify_touch_down(struct libinput_
+ 			uint64_t time,
+ 			int32_t slot,
+ 			int32_t seat_slot,
+-			const struct device_coords *point);
++			const struct device_coords *point,
++			const struct ellipse *area,
++			int32_t pressure);
+ 
+ void
+ touch_notify_touch_motion(struct libinput_device *device,
+ 			  uint64_t time,
+ 			  int32_t slot,
+ 			  int32_t seat_slot,
+-			  const struct device_coords *point);
++			  const struct device_coords *point,
++			  const struct ellipse *area,
++			  int32_t pressure);
+ 
+ void
+ touch_notify_touch_up(struct libinput_device *device,
+--- a/src/libinput.c
++++ b/src/libinput.c
+@@ -112,6 +112,8 @@ struct libinput_event_touch {
+ 	int32_t slot;
+ 	int32_t seat_slot;
+ 	struct device_coords point;
++	struct ellipse area;
++	int32_t pressure;
+ };
+ 
+ struct libinput_event_gesture {
+@@ -793,6 +795,204 @@ libinput_event_touch_get_y(struct libinp
+ 	return evdev_convert_to_mm(device->abs.absinfo_y, event->point.y);
+ }
+ 
++LIBINPUT_EXPORT double
++libinput_event_touch_get_major(struct libinput_event_touch *event)
++{
++	struct evdev_device *device =
++		(struct evdev_device *) event->base.device;
++	double angle;
++
++	require_event_type(libinput_event_get_context(&event->base),
++			   event->base.type,
++			   0,
++			   LIBINPUT_EVENT_TOUCH_DOWN,
++			   LIBINPUT_EVENT_TOUCH_MOTION);
++
++	angle = evdev_device_transform_orientation(device,
++						   event->area.orientation);
++
++	return evdev_device_transform_ellipse_diameter_to_mm(device,
++							     event->area.major,
++							     angle);
++}
++
++LIBINPUT_EXPORT double
++libinput_event_touch_get_major_transformed(struct libinput_event_touch *event,
++					   uint32_t width,
++					   uint32_t height)
++{
++	struct evdev_device *device =
++		(struct evdev_device *) event->base.device;
++	double angle;
++
++	require_event_type(libinput_event_get_context(&event->base),
++			   event->base.type,
++			   0,
++			   LIBINPUT_EVENT_TOUCH_DOWN,
++			   LIBINPUT_EVENT_TOUCH_MOTION);
++
++	angle = evdev_device_transform_orientation(device,
++						   event->area.orientation);
++
++	return evdev_device_transform_ellipse_diameter(device,
++						       event->area.major,
++						       angle,
++						       width,
++						       height);
++}
++
++LIBINPUT_EXPORT int
++libinput_event_touch_has_major(struct libinput_event_touch *event)
++{
++	struct evdev_device *device =
++		(struct evdev_device *) event->base.device;
++
++	require_event_type(libinput_event_get_context(&event->base),
++			   event->base.type,
++			   0,
++			   LIBINPUT_EVENT_TOUCH_DOWN,
++			   LIBINPUT_EVENT_TOUCH_MOTION);
++
++	return device->abs.absinfo_major != 0;
++}
++
++LIBINPUT_EXPORT double
++libinput_event_touch_get_minor(struct libinput_event_touch *event)
++{
++	struct evdev_device *device =
++		(struct evdev_device *) event->base.device;
++	double angle;
++
++	require_event_type(libinput_event_get_context(&event->base),
++			   event->base.type,
++			   0,
++			   LIBINPUT_EVENT_TOUCH_DOWN,
++			   LIBINPUT_EVENT_TOUCH_MOTION);
++
++	angle = evdev_device_transform_orientation(device,
++						   event->area.orientation);
++
++	/* angle + 90 since the minor diameter is perpendicular to the
++	 * major axis */
++	return evdev_device_transform_ellipse_diameter_to_mm(device,
++							     event->area.minor,
++							     angle + 90.0);
++
++}
++
++LIBINPUT_EXPORT double
++libinput_event_touch_get_minor_transformed(struct libinput_event_touch *event,
++					   uint32_t width,
++					   uint32_t height)
++{
++	struct evdev_device *device =
++		(struct evdev_device *) event->base.device;
++	double angle;
++	int diameter;
++
++	require_event_type(libinput_event_get_context(&event->base),
++			   event->base.type,
++			   0,
++			   LIBINPUT_EVENT_TOUCH_DOWN,
++			   LIBINPUT_EVENT_TOUCH_MOTION);
++
++	angle = evdev_device_transform_orientation(device,
++						   event->area.orientation);
++
++	/* use major diameter if minor is not available, but if it is
++	 * add 90 since the minor diameter is perpendicular to the
++	 * major axis */
++	if (device->abs.absinfo_minor) {
++		diameter = event->area.minor,
++		angle += 90.0;
++	} else {
++		diameter = event->area.major;
++	}
++
++	return evdev_device_transform_ellipse_diameter(device,
++						       diameter,
++						       angle,
++						       width,
++						       height);
++}
++
++LIBINPUT_EXPORT int
++libinput_event_touch_has_minor(struct libinput_event_touch *event)
++{
++	struct evdev_device *device =
++		(struct evdev_device *) event->base.device;
++
++	require_event_type(libinput_event_get_context(&event->base),
++			   event->base.type,
++			   0,
++			   LIBINPUT_EVENT_TOUCH_DOWN,
++			   LIBINPUT_EVENT_TOUCH_MOTION);
++
++	return device->abs.absinfo_minor != 0;
++}
++
++LIBINPUT_EXPORT double
++libinput_event_touch_get_orientation(struct libinput_event_touch *event)
++{
++	struct evdev_device *device =
++		(struct evdev_device *) event->base.device;
++
++	require_event_type(libinput_event_get_context(&event->base),
++			   event->base.type,
++			   0,
++			   LIBINPUT_EVENT_TOUCH_DOWN,
++			   LIBINPUT_EVENT_TOUCH_MOTION);
++
++	return evdev_device_transform_orientation(device,
++						  event->area.orientation);
++}
++
++LIBINPUT_EXPORT int
++libinput_event_touch_has_orientation(struct libinput_event_touch *event)
++{
++	struct evdev_device *device =
++		(struct evdev_device *) event->base.device;
++
++	require_event_type(libinput_event_get_context(&event->base),
++			   event->base.type,
++			   0,
++			   LIBINPUT_EVENT_TOUCH_DOWN,
++			   LIBINPUT_EVENT_TOUCH_MOTION);
++
++	return device->abs.absinfo_orientation != 0;
++}
++
++LIBINPUT_EXPORT double
++libinput_event_touch_get_pressure(struct libinput_event_touch *event)
++{
++	struct evdev_device *device =
++		(struct evdev_device *) event->base.device;
++
++	require_event_type(libinput_event_get_context(&event->base),
++			   event->base.type,
++			   0,
++			   LIBINPUT_EVENT_TOUCH_DOWN,
++			   LIBINPUT_EVENT_TOUCH_MOTION);
++
++	return evdev_device_transform_pressure(device,
++					       event->pressure);
++}
++
++LIBINPUT_EXPORT int
++libinput_event_touch_has_pressure(struct libinput_event_touch *event)
++{
++	struct evdev_device *device =
++		(struct evdev_device *) event->base.device;
++
++	require_event_type(libinput_event_get_context(&event->base),
++			   event->base.type,
++			   0,
++			   LIBINPUT_EVENT_TOUCH_DOWN,
++			   LIBINPUT_EVENT_TOUCH_MOTION);
++
++	return device->abs.absinfo_pressure != 0;
++}
++
+ LIBINPUT_EXPORT uint32_t
+ libinput_event_gesture_get_time(struct libinput_event_gesture *event)
+ {
+@@ -2181,7 +2381,9 @@ touch_notify_touch_down(struct libinput_
+ 			uint64_t time,
+ 			int32_t slot,
+ 			int32_t seat_slot,
+-			const struct device_coords *point)
++			const struct device_coords *point,
++			const struct ellipse *area,
++			int32_t pressure)
+ {
+ 	struct libinput_event_touch *touch_event;
+ 
+@@ -2197,6 +2399,8 @@ touch_notify_touch_down(struct libinput_
+ 		.slot = slot,
+ 		.seat_slot = seat_slot,
+ 		.point = *point,
++		.area = *area,
++		.pressure = pressure,
+ 	};
+ 
+ 	post_device_event(device, time,
+@@ -2209,7 +2413,9 @@ touch_notify_touch_motion(struct libinpu
+ 			  uint64_t time,
+ 			  int32_t slot,
+ 			  int32_t seat_slot,
+-			  const struct device_coords *point)
++			  const struct device_coords *point,
++			  const struct ellipse *area,
++			  int32_t pressure)
+ {
+ 	struct libinput_event_touch *touch_event;
+ 
+@@ -2225,6 +2431,8 @@ touch_notify_touch_motion(struct libinpu
+ 		.slot = slot,
+ 		.seat_slot = seat_slot,
+ 		.point = *point,
++		.area = *area,
++		.pressure = pressure,
+ 	};
+ 
+ 	post_device_event(device, time,
+--- a/src/libinput.h
++++ b/src/libinput.h
+@@ -1475,6 +1475,228 @@ libinput_event_touch_get_y_transformed(s
+ /**
+  * @ingroup event_touch
+  *
++ * Return the diameter of the major axis of the touch ellipse in mm.
++ * This value might not be provided by the device, in that case the value
++ * 0.0 is returned.
++ *
++ * A more detailed explanation can be found in @ref touch_event_properties.
++ *
++ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
++ *
++ * @note It is an application bug to call this function for events of type
++ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION.
++ *
++ * @param event The libinput touch event
++ * @return The current major axis diameter
++ */
++double
++libinput_event_touch_get_major(struct libinput_event_touch *event);
++
++/**
++ * @ingroup event_touch
++ *
++ * Return the diameter of the major axis of the touch ellipse in screen
++ * space. This value might not be provided by the device, in that case the
++ * value 0.0 is returned.
++ *
++ * A more detailed explanation can be found in @ref touch_event_properties.
++ *
++ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
++ *
++ * @note It is an application bug to call this function for events of type
++ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION.
++ *
++ * @param event The libinput touch event
++ * @param width The current output screen width
++ * @param height The current output screen height
++ * @return The current major axis diameter
++ */
++double
++libinput_event_touch_get_major_transformed(struct libinput_event_touch *event,
++					   uint32_t width,
++					   uint32_t height);
++
++/**
++ * @ingroup event_touch
++ *
++ * Return if the event contains a major axis value of the touch ellipse.
++ *
++ * A more detailed explanation can be found in @ref touch_event_properties.
++ *
++ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
++ *
++ * @note It is an application bug to call this function for events of type
++ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION.
++ *
++ * @param event The libinput touch event
++ * @return Non-zero when a major diameter is available
++ */
++int
++libinput_event_touch_has_major(struct libinput_event_touch *event);
++
++/**
++ * @ingroup event_touch
++ *
++ * Return the diameter of the minor axis of the touch ellipse in mm.
++ * This value might not be provided by the device, in this case the value
++ * 0.0 is returned.
++ *
++ * A more detailed explanation can be found in @ref touch_event_properties.
++ *
++ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
++ *
++ * @note It is an application bug to call this function for events of type
++ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION.
++ *
++ * @param event The libinput touch event
++ * @return The current minor diameter
++ */
++double
++libinput_event_touch_get_minor(struct libinput_event_touch *event);
++
++/**
++ * @ingroup event_touch
++ *
++ * Return the diameter of the minor axis of the touch ellipse in screen
++ * space. This value might not be provided by the device, in this case
++ * the value 0.0 is returned.
++ *
++ * A more detailed explanation can be found in @ref touch_event_properties.
++ *
++ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
++ *
++ * @note It is an application bug to call this function for events of type
++ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION.
++ *
++ * @param event The libinput touch event
++ * @param width The current output screen width
++ * @param height The current output screen height
++ * @return The current minor diameter
++ */
++double
++libinput_event_touch_get_minor_transformed(struct libinput_event_touch *event,
++					   uint32_t width,
++					   uint32_t height);
++/**
++ * @ingroup event_touch
++ *
++ * Return if the event contains a minor axis value of the touch ellipse.
++ *
++ * A more detailed explanation can be found in @ref touch_event_properties.
++ *
++ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
++ *
++ * @note It is an application bug to call this function for events of type
++ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION.
++ *
++ * @param event The libinput touch event
++ * @return Non-zero when a minor diameter is available
++ */
++int
++libinput_event_touch_has_minor(struct libinput_event_touch *event);
++
++/**
++ * @ingroup event_touch
++ *
++ * Return the pressure value applied to the touch contact normalized to the
++ * range [0, 1]. If this value is not available the function returns the maximum
++ * value 1.0.
++ *
++ * A more detailed explanation can be found in @ref touch_event_properties.
++ *
++ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION this function returns 0.
++ *
++ * @note It is an application bug to call this function for events of type
++ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION.
++ *
++ * @param event The libinput touch event
++ * @return The current pressure value
++ */
++double
++libinput_event_touch_get_pressure(struct libinput_event_touch *event);
++
++/**
++ * @ingroup event_touch
++ *
++ * Return if the event contains a pressure value for the touch contact.
++ *
++ * A more detailed explanation can be found in @ref touch_event_properties.
++ *
++ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
++ *
++ * @note It is an application bug to call this function for events of type
++ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION.
++ *
++ * @param event The libinput touch event
++ * @return Non-zero when a pressure value is available
++ */
++int
++libinput_event_touch_has_pressure(struct libinput_event_touch *event);
++
++/**
++ * @ingroup event_touch
++ *
++ * Return the major axis rotation in degrees, clockwise from the logical north
++ * of the touch screen.
++ *
++ * @note Even when the orientation is measured by the device, it might be only
++ * available in coarse steps (e.g only indicating alignment with either of the
++ * axes).
++ *
++ * A more detailed explanation can be found in @ref touch_event_properties.
++ *
++ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
++ *
++ * @note It is an application bug to call this function for events of type
++ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION.
++ *
++ * @param event The libinput touch event
++ * @return The current orientation value
++ */
++double
++libinput_event_touch_get_orientation(struct libinput_event_touch *event);
++
++/**
++ * @ingroup event_touch
++ *
++ * Return if the event contains a orientation value for the touch contact.
++ *
++ * A more detailed explanation can be found in @ref touch_event_properties.
++ *
++ * For events not of type @ref LIBINPUT_EVENT_TOUCH_DOWN, @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION, this function returns 0.
++ *
++ * @note It is an application bug to call this function for events of type
++ * other than @ref LIBINPUT_EVENT_TOUCH_DOWN or @ref
++ * LIBINPUT_EVENT_TOUCH_MOTION.
++ *
++ * @param event The libinput touch event
++ * @return Non-zero when an orientation value is available
++ */
++int
++libinput_event_touch_has_orientation(struct libinput_event_touch *event);
++
++/**
++ * @ingroup event_touch
++ *
+  * @return The generic libinput_event of this event
+  */
+ struct libinput_event *
+--- a/src/libinput.sym
++++ b/src/libinput.sym
+@@ -285,6 +285,16 @@ LIBINPUT_1.7 {
+ 	libinput_event_get_switch_event;
+ 	libinput_event_switch_get_base_event;
+ 	libinput_event_switch_get_switch_state;
++	libinput_event_touch_get_major;
++	libinput_event_touch_get_major_transformed;
++	libinput_event_touch_get_minor;
++	libinput_event_touch_get_minor_transformed;
++	libinput_event_touch_get_orientation;
++	libinput_event_touch_get_pressure;
++	libinput_event_touch_has_major;
++	libinput_event_touch_has_minor;
++	libinput_event_touch_has_orientation;
++	libinput_event_touch_has_pressure;
+ 	libinput_event_switch_get_switch;
+ 	libinput_event_switch_get_time;
+ 	libinput_event_switch_get_time_usec;
+--- a/test/test-touch.c
++++ b/test/test-touch.c
+@@ -818,6 +818,245 @@ START_TEST(touch_fuzz)
+ 	}
+ }
+ END_TEST
++
++static inline double calc_diameter_scale(double x_res,
++					 double y_res,
++					 double orientation)
++{
++	double orientation_rad = deg2rad(orientation);
++	if (x_res == y_res)
++		return x_res;
++
++	return hypotf(y_res * fabs(cos(orientation_rad)),
++		      x_res * fabs(sin(orientation_rad)));
++}
++
++static inline bool exceeds_range(const struct input_absinfo *info,
++				 int value)
++{
++	return !info || (info->minimum > value) || (info->maximum < value);
++}
++
++START_TEST(touch_point_properties)
++{
++	struct litest_device *dev = litest_current_device();
++	struct libinput *li = dev->libinput;
++	struct libinput_event *ev;
++	struct libinput_event_touch *tev;
++
++	const int touch_x = 50;
++	const int touch_y = 90;
++	const int input_orientation = 64;
++	const int input_pressure = 128;
++	const int input_major = 14;
++	const int input_minor= 8;
++
++	const int input_orientation_2 = 128;
++	const int input_major_2 = 30;
++
++	struct axis_replacement down_values[] = {
++		{ABS_MT_PRESSURE, input_pressure},
++		{ABS_MT_ORIENTATION, input_orientation},
++		{ABS_MT_TOUCH_MAJOR, input_major},
++		{ABS_MT_TOUCH_MINOR, input_minor},
++		{-1, -1}};
++	struct axis_replacement move_values[] = {
++		{ABS_MT_ORIENTATION, input_orientation_2},
++		{ABS_MT_TOUCH_MAJOR, input_major_2},
++		{-1, -1}};
++	const struct input_absinfo *orientation_info;
++	const struct input_absinfo *pressure_info;
++	const struct input_absinfo *major_info;
++	const struct input_absinfo *minor_info;
++	const struct input_absinfo *x_info, *y_info;
++
++	double x_res, y_res, touch_minor_scale, touch_major_scale;
++
++	double expected_major;
++	double expected_minor;
++	double expected_orientation;
++	double expected_pressure;
++
++	pressure_info = libevdev_get_abs_info(dev->evdev, ABS_MT_PRESSURE);
++	orientation_info = libevdev_get_abs_info(dev->evdev, ABS_MT_ORIENTATION);
++	major_info = libevdev_get_abs_info(dev->evdev, ABS_MT_TOUCH_MAJOR);
++	minor_info = libevdev_get_abs_info(dev->evdev, ABS_MT_TOUCH_MINOR);
++	x_info = libevdev_get_abs_info(dev->evdev, ABS_MT_POSITION_X);
++	y_info = libevdev_get_abs_info(dev->evdev, ABS_MT_POSITION_Y);
++
++	if (!orientation_info || !pressure_info || !major_info || !minor_info)
++		return;
++
++	if (exceeds_range(pressure_info, input_pressure) ||
++	    exceeds_range(major_info, input_major) ||
++	    exceeds_range(major_info, input_major_2) ||
++	    exceeds_range(minor_info, input_minor) ||
++	    exceeds_range(orientation_info, input_orientation) ||
++	    exceeds_range(orientation_info, input_orientation_2)) {
++		fprintf(stderr,
++			"%s does not support the required value ranges\n",
++			libinput_device_get_name(dev->libinput_device));
++		return;
++        }
++
++	x_res = x_info->resolution ? x_info->resolution : 1;
++	y_res = y_info->resolution ? y_info->resolution : 1;
++
++	expected_orientation = 90.0 * input_orientation /
++				orientation_info->maximum;
++	touch_major_scale = calc_diameter_scale(x_res,
++						y_res,
++						expected_orientation);
++	touch_minor_scale = calc_diameter_scale(x_res,
++						y_res,
++						expected_orientation + 90.0);
++	expected_major = input_major / touch_major_scale;
++	expected_minor = input_minor / touch_minor_scale;
++	expected_pressure = (double)input_pressure / (pressure_info->maximum -
++						      pressure_info->minimum);
++
++	litest_drain_events(li);
++
++	litest_touch_down_extended(dev, 0, touch_x, touch_y, down_values);
++
++	litest_wait_for_event(li);
++	ev = libinput_get_event(li);
++	tev = litest_is_touch_event(ev, LIBINPUT_EVENT_TOUCH_DOWN);
++
++	ck_assert_double_eq(libinput_event_touch_get_pressure(tev),
++			    expected_pressure);
++	ck_assert_double_eq(libinput_event_touch_get_orientation(tev),
++			    expected_orientation);
++	ck_assert_double_eq(libinput_event_touch_get_major(tev),
++			    expected_major);
++	ck_assert_double_eq(libinput_event_touch_get_minor(tev),
++			    expected_minor);
++
++	litest_touch_move_extended(dev, 0, touch_x, touch_y, move_values);
++
++	do {
++		libinput_event_destroy(ev);
++		litest_wait_for_event(li);
++		ev = libinput_get_event(li);
++	} while (libinput_event_get_type(ev) == LIBINPUT_EVENT_TOUCH_FRAME);
++
++	tev = litest_is_touch_event(ev, LIBINPUT_EVENT_TOUCH_MOTION);
++
++	expected_orientation = 90.0 * input_orientation_2 /
++				orientation_info->maximum;
++	touch_major_scale = calc_diameter_scale(x_res,
++						y_res,
++						expected_orientation);
++	expected_major = input_major_2 / touch_major_scale;
++
++	ck_assert_double_eq(libinput_event_touch_get_pressure(tev),
++			    expected_pressure);
++	ck_assert_double_eq(libinput_event_touch_get_orientation(tev),
++			    expected_orientation);
++	ck_assert_double_eq(libinput_event_touch_get_major(tev),
++			    expected_major);
++	ck_assert_double_eq(libinput_event_touch_get_minor(tev),
++			    expected_minor);
++
++	libinput_event_destroy(ev);
++}
++END_TEST
++
++START_TEST(touch_point_no_minor_or_orientation)
++{
++	struct litest_device *dev = litest_current_device();
++	struct libinput *li = dev->libinput;
++	struct libinput_event *ev;
++	struct libinput_event_touch *tev;
++	const int touch_x = 50;
++	const int touch_y = 90;
++	const int input_pressure = 43;
++	const int input_major = 23;
++	const int input_major_2 = 30;
++
++	struct axis_replacement down_values[] = {
++		{ABS_MT_PRESSURE, input_pressure},
++		{ABS_MT_TOUCH_MAJOR, input_major},
++		{-1, -1}};
++	struct axis_replacement move_values[] = {
++		{ABS_MT_TOUCH_MAJOR, input_major_2},
++		{-1, -1}};
++
++	const struct input_absinfo *orientation_info;
++	const struct input_absinfo *pressure_info;
++	const struct input_absinfo *x_info;
++	const struct input_absinfo *major_info;
++	double touch_major_scale;
++
++	double expected_major;
++	double expected_minor;
++	double expected_orientation = 0.0;
++	double expected_pressure;
++
++	x_info = libevdev_get_abs_info(dev->evdev, ABS_MT_POSITION_X);
++	pressure_info = libevdev_get_abs_info(dev->evdev, ABS_MT_PRESSURE);
++	major_info = libevdev_get_abs_info(dev->evdev, ABS_MT_TOUCH_MAJOR);
++	orientation_info = libevdev_get_abs_info(dev->evdev,
++						 ABS_MT_ORIENTATION);
++
++	if (orientation_info || !pressure_info || !x_info || !major_info ||
++	    !libevdev_has_event_code(dev->evdev, EV_ABS, ABS_MT_TOUCH_MAJOR) ||
++	    libevdev_has_event_code(dev->evdev, EV_ABS, ABS_MT_TOUCH_MINOR))
++		return;
++
++	if (exceeds_range(pressure_info, input_pressure) ||
++	    exceeds_range(major_info, input_major) ||
++	    exceeds_range(major_info, input_major_2)) {
++		fprintf(stderr,
++			"%s does not support the required value ranges\n",
++			libinput_device_get_name(dev->libinput_device));
++		return;
++        }
++
++	expected_pressure = (double) input_pressure /
++			(pressure_info->maximum - pressure_info->minimum);
++	touch_major_scale = x_info->resolution ? x_info->resolution : 1;
++	expected_major = input_major / touch_major_scale;
++	expected_minor = expected_major;
++
++	litest_drain_events(li);
++
++	litest_touch_down_extended(dev, 0, touch_x, touch_y, down_values);
++
++	litest_wait_for_event(li);
++	ev = libinput_get_event(li);
++	tev = litest_is_touch_event(ev, LIBINPUT_EVENT_TOUCH_DOWN);
++
++	ck_assert_double_eq(libinput_event_touch_get_orientation(tev),
++			    expected_orientation);
++	ck_assert_double_eq(libinput_event_touch_get_pressure(tev),
++			    expected_pressure);
++	ck_assert_double_eq(libinput_event_touch_get_major(tev),
++			    expected_major);
++	ck_assert_double_eq(libinput_event_touch_get_minor(tev),
++			    expected_minor);
++
++	expected_major = input_major_2 / touch_major_scale;
++	expected_minor = expected_major;
++
++	litest_touch_move_extended(dev, 0, touch_x, touch_y, move_values);
++
++	do {
++		libinput_event_destroy(ev);
++		litest_wait_for_event(li);
++		ev = libinput_get_event(li);
++	} while (libinput_event_get_type(ev) == LIBINPUT_EVENT_TOUCH_FRAME);
++
++	tev = litest_is_touch_event(ev, LIBINPUT_EVENT_TOUCH_MOTION);
++
++	ck_assert_double_eq(libinput_event_touch_get_major(tev),
++			    expected_major);
++	ck_assert_double_eq(libinput_event_touch_get_minor(tev),
++			    expected_minor);
++
++	libinput_event_destroy(ev);
++}
++END_TEST
+ 
+ START_TEST(touch_release_on_unplug)
+ {
+@@ -844,9 +1083,11 @@ litest_setup_tests_touch(void)
+ 	litest_add("touch:protocol a", touch_protocol_a_init, LITEST_PROTOCOL_A, LITEST_ANY);
+ 	litest_add("touch:protocol a", touch_protocol_a_touch, LITEST_PROTOCOL_A, LITEST_ANY);
+ 	litest_add("touch:protocol a", touch_protocol_a_2fg_touch, LITEST_PROTOCOL_A, LITEST_ANY);
++	litest_add("touch:properties", touch_point_properties, LITEST_TOUCH|LITEST_ELLIPSE, LITEST_ANY);
++	litest_add("touch:properties", touch_point_no_minor_or_orientation, LITEST_TOUCH|LITEST_ELLIPSE, LITEST_ANY);
+ 
+ 	litest_add_ranged("touch:state", touch_initial_state, LITEST_TOUCH, LITEST_PROTOCOL_A, &axes);
+ 
+ 	litest_add("touch:time", touch_time_usec, LITEST_TOUCH, LITEST_TOUCHPAD);
+ 
+ 	litest_add_for_device("touch:fuzz", touch_fuzz, LITEST_MULTITOUCH_FUZZ_SCREEN);

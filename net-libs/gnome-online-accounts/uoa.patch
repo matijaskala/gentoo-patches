@@ -1,0 +1,31 @@
+--- a/telepathy-account-widgets/tp-account-widgets/Makefile.am
++++ b/telepathy-account-widgets/tp-account-widgets/Makefile.am
+@@ -98,6 +98,7 @@
+ 
+ if HAVE_UOA
+ libtp_account_widgets_la_SOURCES += $(uoa_sources)
++libtp_account_widgets_la_LIBADD = $(UOA_LIBS)
+ EXTRA_DIST =
+ else
+ EXTRA_DIST = $(uoa_sources)
+--- a/telepathy-account-widgets/tp-account-widgets/Makefile.in
++++ b/telepathy-account-widgets/tp-account-widgets/Makefile.in
+@@ -106,7 +106,9 @@
+ CONFIG_CLEAN_FILES =
+ CONFIG_CLEAN_VPATH_FILES =
+ LTLIBRARIES = $(noinst_LTLIBRARIES)
+-libtp_account_widgets_la_LIBADD =
++am__DEPENDENCIES_1 =
++@HAVE_UOA_TRUE@libtp_account_widgets_la_DEPENDENCIES =  \
++@HAVE_UOA_TRUE@	$(am__DEPENDENCIES_1)
+ am__libtp_account_widgets_la_SOURCES_DIST = tpaw-account-settings.c \
+ 	tpaw-account-widget.c tpaw-account-widget-irc.c \
+ 	tpaw-account-widget-private.h tpaw-account-widget-sip.c \
+@@ -518,6 +520,7 @@
+ 	tpaw-uoa-utils.h \
+ 	$(NULL)
+ 
++@HAVE_UOA_TRUE@libtp_account_widgets_la_LIBADD = $(UOA_LIBS)
+ @HAVE_UOA_FALSE@EXTRA_DIST = $(uoa_sources) \
+ @HAVE_UOA_FALSE@	tpaw-account-widgets.gresource.xml \
+ @HAVE_UOA_FALSE@	$(account_widgets_dtd_files) \

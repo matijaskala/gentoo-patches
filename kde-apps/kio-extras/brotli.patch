@@ -1,0 +1,11 @@
+--- a/man/kio_man.cpp
++++ b/man/kio_man.cpp
+@@ -70,6 +70,8 @@
+         pos -= 5;
+     else if ( name->indexOf(".xz", -3) != -1 )
+         pos -= 3;
++    else if ( name->indexOf(".br", -3) != -1 )
++        pos -= 3;
+ 
+     if ( pos > 0 )
+         pos = name->lastIndexOf('.', pos-1);
