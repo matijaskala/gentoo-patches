@@ -1,0 +1,27 @@
+--- a/src/modules/localecfg/main.py	2019-09-17 21:16:45.663080497 +0200
++++ b/src/modules/localecfg/main.py	2019-09-17 21:16:49.809747083 +0200
+@@ -147,7 +147,7 @@
+     target_locale_gen = "{!s}/etc/locale.gen".format(install_path)
+     target_locale_gen_bak = target_locale_gen + ".bak"
+     target_locale_conf_path = "{!s}/etc/locale.conf".format(install_path)
+-    target_etc_default_path = "{!s}/etc/default".format(install_path)
++    target_etc_envd_path = "{!s}/etc/env.d".format(install_path)
+ 
+     # restore backup if available
+     if os.path.exists(target_locale_gen_bak):
+@@ -169,11 +169,11 @@
+             lcf.write("{!s}={!s}\n".format(k, v))
+         libcalamares.utils.debug('{!s} done'.format(target_locale_conf_path))
+ 
+-    # write /etc/default/locale if /etc/default exists and is a dir
+-    if os.path.isdir(target_etc_default_path):
+-        with open(os.path.join(target_etc_default_path, "locale"), "w") as edl:
++    # write /etc/env.d/02locale if /etc/env.d exists and is a dir
++    if os.path.isdir(target_etc_envd_path):
++        with open(os.path.join(target_etc_envd_path, "02locale"), "w") as edl:
+             for k, v in locale_conf.items():
+                 edl.write("{!s}={!s}\n".format(k, v))
+-        libcalamares.utils.debug('{!s} done'.format(target_etc_default_path))
++        libcalamares.utils.debug('{!s} done'.format(target_etc_envd_path))
+ 
+     return None

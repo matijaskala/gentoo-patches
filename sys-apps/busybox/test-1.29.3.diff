@@ -1,0 +1,49 @@
+--- a/coreutils/test.c	2017-01-03 11:34:22.755826087 +0100
++++ b/coreutils/test.c	2016-02-11 12:50:37.000000000 +0100
+@@ -58,6 +58,7 @@
+ //usage:       "1\n"
+ 
+ #include "libbb.h"
++#include <regex.h>
+ 
+ /* This is a NOFORK applet. Be very careful! */
+ 
+@@ -162,6 +163,7 @@ enum token {
+ 
+ 	STREZ, /* str ops */
+ 	STRNZ,
++	STRRE,
+ 	STREQ,
+ 	STRNE,
+ 	STRLT,
+@@ -295,6 +297,7 @@ static const struct operator_t ops_table
+ 	{ /* "-G" */ FILGID  , UNOP   },
+ 	{ /* "-L" */ FILSYM  , UNOP   },
+ 	{ /* "-S" */ FILSOCK , UNOP   },
++	{ /* "=~" */ STRRE   , BINOP  },
+ 	{ /* "="  */ STREQ   , BINOP  },
+ 	{ /* "==" */ STREQ   , BINOP  },
+ 	{ /* "!=" */ STRNE   , BINOP  },
+@@ -339,6 +342,7 @@ static const char ops_texts[] ALIGN1 =
+ 	"-G"  "\0"
+ 	"-L"  "\0"
+ 	"-S"  "\0"
++	"=~"  "\0"
+ 	"="   "\0"
+ 	"=="  "\0"
+ 	"!="  "\0"
+@@ -498,6 +502,14 @@ static int binop(void)
+ 	if (opnd2 == NULL)
+ 		syntax(args[-1], "argument expected");
+ 
++	if (op->op_num == STRRE) {
++		regex_t regex;
++		if (applet_name[1] != '[')
++			syntax(args[-1], "unknown operand");
++		if (regcomp(&regex, opnd2, REG_EXTENDED | REG_NOSUB))
++			longjmp(leaving, 2);
++		return regexec(&regex, opnd1, 0, 0, 0) == 0;
++	}
+ 	if (is_int_op(op->op_num)) {
+ 		val1 = getn(opnd1);
+ 		val2 = getn(opnd2);

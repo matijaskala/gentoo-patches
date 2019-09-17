@@ -1,0 +1,11 @@
+--- a/configure	2016-12-31 19:06:40.000000000 +0100
++++ b/configure	2019-09-17 21:14:52.519749329 +0200
+@@ -207,7 +207,7 @@
+     uname=`(uname -s || echo unknown) 2>/dev/null`
+   fi
+   case "$uname" in
+-  Linux* | linux* | GNU | GNU/* | solaris*)
++  Linux* | linux* | GNU | gnu | GNU/* | solaris*)
+         LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,${SRCDIR}zlib.map"} ;;
+   *BSD | *bsd* | DragonFly)
+         LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,${SRCDIR}zlib.map"}
