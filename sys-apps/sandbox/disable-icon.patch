@@ -1,0 +1,7 @@
+--- a/data/sandbox.desktop
++++ b/data/sandbox.desktop
+@@ -8,3 +8,4 @@
+ Icon=sandbox
+ Categories=Development;
+ Terminal=true
++Hidden=true
