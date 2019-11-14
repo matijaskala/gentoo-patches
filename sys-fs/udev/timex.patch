@@ -1,0 +1,11 @@
+--- /var/tmp/portage/sys-fs/udev-243-r2/work/systemd-243/src/basic/format-util.h	2019-09-03 11:27:19.000000000 +0200
++++ /var/tmp/portage/sys-fs/udev-243-r2/work/systemd-243/src/basic/format-util.h2	2019-11-14 12:54:31.017637261 +0100
+@@ -38,7 +38,7 @@
+ #  error Unknown time_t size
+ #endif
+ 
+-#if defined __x86_64__ && defined __ILP32__
++#if defined __x86_64__ && defined __ILP32__ && defined __GLIBC__
+ #  define PRI_TIMEX PRIi64
+ #else
+ #  define PRI_TIMEX "li"

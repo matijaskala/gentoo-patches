@@ -1,0 +1,11 @@
+--- /var/tmp/portage/sys-fs/udev-243-r2/work/systemd-243/meson.build	2019-09-03 11:27:19.000000000 +0200
++++ /var/tmp/portage/sys-fs/udev-243-r2/work/systemd-243/meson.build2	2019-11-14 12:56:36.435331905 +0100
+@@ -474,7 +474,7 @@
+ 
+ conf.set10('WANT_LINUX_STAT_H', want_linux_stat_h)
+ 
+-foreach ident : ['secure_getenv', '__secure_getenv']
++foreach ident : ['secure_getenv', '__secure_getenv', 'issetugid']
+         conf.set10('HAVE_' + ident.to_upper(), cc.has_function(ident))
+ endforeach
+ 
