@@ -1,0 +1,80 @@
+From 070ba53ef3b1147e100227ee4bf62e6ba0d74fcc Mon Sep 17 00:00:00 2001
+From: YOSHIOKA Takuma <lo48576@hard-wi.red>
+Date: Fri, 7 Jun 2019 20:19:58 +0900
+Subject: [PATCH 1/2] Load default config before setting CLI options
+
+This prevents CLI options to be overridden by the default config.
+
+Fixes <https://github.com/jgke/connman-gtk/issues/38>.
+---
+ src/main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/main.c b/src/main.c
+index e974e5a..fb25f94 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -600,7 +600,6 @@ static void startup(GtkApplication *app, gpointer user_data)
+ {
+ 	g_bus_get(G_BUS_TYPE_SYSTEM, NULL, dbus_connected, NULL);
+ 
+-	config_load(app);
+ 	if(no_icon)
+ 		status_icon_enabled = FALSE;
+ 
+@@ -687,6 +686,7 @@ int main(int argc, char *argv[])
+ 					 (GDestroyNotify)remove_service_struct);
+ 
+ 	app = gtk_application_new(NULL, G_APPLICATION_FLAGS_NONE);
++	config_load(app);
+ 	g_application_add_main_option_entries(G_APPLICATION(app), options);
+ 	g_signal_connect(app, "startup", G_CALLBACK(startup), NULL);
+ 	g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
+
+From 6d8ea29beb8b021efbf4341f1c364db737ef7506 Mon Sep 17 00:00:00 2001
+From: YOSHIOKA Takuma <lo48576@hard-wi.red>
+Date: Fri, 7 Jun 2019 22:44:59 +0900
+Subject: [PATCH 2/2] Stop making window visible on startup if launching to
+ tray
+
+This prevents the window from appearing and then immediately hiding.
+---
+ src/main.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
+
+diff --git a/src/main.c b/src/main.c
+index fb25f94..6588717 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -613,13 +613,9 @@ static void startup(GtkApplication *app, gpointer user_data)
+ 	create_content();
+ 
+ 	g_signal_connect(G_OBJECT(main_window), "key_press_event", G_CALLBACK(handle_keyboard_shortcut), NULL);
+-	gtk_widget_show_all(main_window);
+ 
+ #ifdef USE_STATUS_ICON
+ 	if(status_icon_enabled && !no_icon) {
+-		if(launch_to_tray)
+-			gtk_widget_hide(main_window);
+-
+ 		g_signal_connect(main_window, "delete-event",
+ 				 G_CALLBACK(gtk_widget_hide_on_delete),
+ 				 main_window);
+@@ -631,8 +627,15 @@ static void startup(GtkApplication *app, gpointer user_data)
+ static void activate(GtkApplication *app, gpointer user_data)
+ {
+ #ifdef USE_STATUS_ICON
+-	if(!launch_to_tray)
+-		gtk_widget_show(main_window);
++	static gboolean window_has_shown = FALSE;
++	if(!launch_to_tray || !status_icon_enabled || no_icon) {
++		if(window_has_shown)
++			gtk_widget_show(main_window);
++		else
++			gtk_widget_show_all(main_window);
++
++		window_has_shown = TRUE;
++	}
+ 	launch_to_tray = FALSE;
+ #endif
+ }

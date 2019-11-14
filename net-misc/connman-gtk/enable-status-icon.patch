@@ -1,0 +1,11 @@
+--- a/net.connman.gtk.gschema.xml
++++ b/net.connman.gtk.gschema.xml
+@@ -0,7 +0,7 @@
+ <schemalist>
+ 	<schema path="/net/connman/gtk/" id="net.connman.gtk">
+ 		<key name="status-icon-enabled" type="b">
+-			<default>false</default>
++			<default>true</default>
+ 		</key>
+ 		<key name="launch-to-tray" type="b">
+ 			<default>false</default>
