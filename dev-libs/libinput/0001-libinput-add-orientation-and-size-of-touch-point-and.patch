@@ -431,11 +431,12 @@ Signed-off-by: Andreas Pokorny <andreas.pokorny@canonical.com>
 +*/
 --- a/src/evdev-fallback.c
 +++ b/src/evdev-fallback.c
-@@ -29,7 +29,12 @@
+@@ -29,8 +29,13 @@
  
  #include <mtdev-plumbing.h>
  
  #include "evdev-fallback.h"
+ #include "util-input-event.h"
 +
 +#define DEFAULT_TOUCH_PRESSURE 1.0
 +#define DEFAULT_TOUCH_ORIENTATION 0.0
