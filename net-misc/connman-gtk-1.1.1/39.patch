@@ -47,9 +47,9 @@ index fb25f94..6588717 100644
 --- a/src/main.c
 +++ b/src/main.c
 @@ -613,13 +613,9 @@ static void startup(GtkApplication *app, gpointer user_data)
+ 
  	create_content();
  
- 	g_signal_connect(G_OBJECT(main_window), "key_press_event", G_CALLBACK(handle_keyboard_shortcut), NULL);
 -	gtk_widget_show_all(main_window);
  
  #ifdef USE_STATUS_ICON
