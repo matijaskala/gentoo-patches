@@ -13,27 +13,6 @@ diff -Naur sandbox-2.11.orig/headers.h sandbox-2.11/headers.h
  #undef FU_ia64_fpreg
  #undef FU_pt_all_user_regs
  
-diff -Naur sandbox-2.11.orig/libsandbox/trace.c sandbox-2.11/libsandbox/trace.c
---- sandbox-2.11.orig/libsandbox/trace.c	2016-03-29 03:01:35.000000000 -0700
-+++ sandbox-2.11/libsandbox/trace.c	2016-03-29 10:32:19.581906031 -0700
-@@ -10,7 +10,7 @@
- #include "sb_nr.h"
- 
- static long do_peekdata(long offset);
--static long _do_ptrace(enum __ptrace_request request, const char *srequest, void *addr, void *data);
-+static long _do_ptrace(int request, const char *srequest, void *addr, void *data);
- #define do_ptrace(request, addr, data) _do_ptrace(request, #request, addr, data)
- #define _trace_possible(data) true
- 
-@@ -44,7 +44,7 @@
- 	_exit(status);
- }
- 
--static long _do_ptrace(enum __ptrace_request request, const char *srequest, void *addr, void *data)
-+static long _do_ptrace(int request, const char *srequest, void *addr, void *data)
- {
- 	long ret;
-  try_again:
 diff -Naur sandbox-2.11.orig/scripts/gen_symbol_header.awk sandbox-2.11/scripts/gen_symbol_header.awk
 --- sandbox-2.11.orig/scripts/gen_symbol_header.awk	2009-08-25 22:59:48.000000000 -0700
 +++ sandbox-2.11/scripts/gen_symbol_header.awk	2016-03-29 10:33:37.236471898 -0700
