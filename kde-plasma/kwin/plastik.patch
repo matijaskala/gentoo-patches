@@ -1,13 +1,12 @@
 --- kwin-5.12.5/plugins/kdecorations/aurorae/themes/plastik/package/contents/ui/main.qml
 +++ kwin-5.12.5/plugins/kdecorations/aurorae/themes/plastik/package/contents/ui/main.qml
-@@ -77,10 +77,7 @@
+@@ -77,9 +77,8 @@
          }
          root.animateButtons = decoration.readConfig("animateButtons", true);
-         root.titleShadow = decoration.readConfig("titleShadow", true);
--        if (decoration.animationsSupported) {
+         if (decoration.animationsSupported) {
              root.animationDuration = 150;
 -            root.animateButtons = false;
--        }
+         }
      }
      ColorHelper {
          id: colorHelper
