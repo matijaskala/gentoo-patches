@@ -75,33 +75,33 @@ Support setting/reading autologin setings for LightDM, LXDM, SDDM
                                                      wtmp_helper_get_path_for_monitor (),
                                                      on_users_monitor_changed);
  
--        daemon->priv->gdm_monitor = setup_monitor (daemon,
--                                                   PATH_GDM_CUSTOM,
--                                                   on_gdm_monitor_changed);
+-        priv->gdm_monitor = setup_monitor (daemon,
+-                                           PATH_GDM_CUSTOM,
+-                                           on_gdm_monitor_changed);
 +        if (g_file_test ("/etc/gdm", G_FILE_TEST_EXISTS))
 +        {
-+                daemon->priv->gdm_monitor = setup_monitor (daemon,
-+                                                           PATH_GDM_CUSTOM,
-+                                                           on_gdm_monitor_changed);
++                priv->gdm_monitor = setup_monitor (daemon,
++                                                   PATH_GDM_CUSTOM,
++                                                   on_gdm_monitor_changed);
 +        }
 +
 +        if (g_file_test ("/etc/lightdm", G_FILE_TEST_EXISTS))
 +        {
-+                daemon->priv->lightdm_monitor = setup_monitor (daemon,
-+                                                               PATH_LIGHTDM_CONFIG,
-+                                                               on_gdm_monitor_changed);
++                priv->lightdm_monitor = setup_monitor (daemon,
++                                                       PATH_LIGHTDM_CONFIG,
++                                                       on_gdm_monitor_changed);
 +        }
 +
 +        if (g_file_test ("/etc/lxdm", G_FILE_TEST_EXISTS))
 +        {
-+                daemon->priv->lxdm_monitor = setup_monitor (daemon,
-+                                                            PATH_LXDM_CONFIG,
-+                                                            on_gdm_monitor_changed);
++                priv->lxdm_monitor = setup_monitor (daemon,
++                                                    PATH_LXDM_CONFIG,
++                                                    on_gdm_monitor_changed);
 +        }
 +
-+        daemon->priv->sddm_monitor = setup_monitor (daemon,
-+                                                    PATH_SDDM_CONFIG,
-+                                                    on_gdm_monitor_changed);
++        priv->sddm_monitor = setup_monitor (daemon,
++                                            PATH_SDDM_CONFIG,
++                                            on_gdm_monitor_changed);
 +
          reload_users_timeout (daemon);
          queue_reload_autologin (daemon);
