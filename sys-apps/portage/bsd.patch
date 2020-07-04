@@ -1,0 +1,26 @@
+--- a/bin/isolated-functions.sh
++++ b/bin/isolated-functions.sh
+@@ -442,7 +442,7 @@
+ 		if type -P gxargs > /dev/null; then
+ 			export XARGS="gxargs -r"
+ 		else
+-			export XARGS="xargs"
++			export XARGS="xargs -r"
+ 		fi
+ 		;;
+ 	*)
+@@ -464,11 +464,9 @@
+ ___parallel_xargs() {
+ 	local chunksize=1 jobs xargs=( ${XARGS} )
+ 
+-	if "${xargs[@]}" --help | grep -q -- --max-procs=; then
+-		jobs=$(___makeopts_jobs)
+-		if [[ ${jobs} -gt 1 ]]; then
+-			xargs+=("--max-procs=${jobs}" -L "${chunksize}")
+-		fi
++	jobs=$(___makeopts_jobs)
++	if [[ ${jobs} -gt 1 ]]; then
++		xargs+=(-P "${jobs}" -L "${chunksize}")
+ 	fi
+ 
+ 	"${xargs[@]}" "${@}"
