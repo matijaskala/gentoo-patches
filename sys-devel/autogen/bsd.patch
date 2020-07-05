@@ -1,0 +1,40 @@
+diff --git a/agen5/mk-stamps.sh b/agen5/mk-stamps.sh
+index 49269cf3..b9a97feb 100644
+--- a/agen5/mk-stamps.sh
++++ b/agen5/mk-stamps.sh
+@@ -28,7 +28,7 @@
+ #  because some of the rules are complex and we don't want to
+ #  deal with the dual update problem.
+ 
+-STAMP_TEMP_DIR=$(mktemp --suffix=.tdir -d /tmp/mk-stamps-XXXXXXXX)
++STAMP_TEMP_DIR=$(mktemp -d /tmp/mk-stamps-XXXXXXXX)
+ exec 9>&2 2>> ${STAMP_TEMP_DIR}/mk-stamps.log
+ stop_tracing=:
+ if (shopt -qo xtrace)
+--- a/build-aux/run-ag.sh
++++ b/build-aux/run-ag.sh
+@@ -28,7 +28,7 @@
+   return 0
+ }
+ 
+-STAMP_TEMP_DIR=$(mktemp --suffix=.tdir -d -t run-ag-XXXXXXXX)
++STAMP_TEMP_DIR=$(mktemp -d -t run-ag-XXXXXXXX)
+ exec 9>&2 2>> ${STAMP_TEMP_DIR}/mk-stamps.log
+ VERBOSE=1
+ 
+diff --git a/config/mk-shdefs.in b/config/mk-shdefs.in
+index 68aed2a2..6c6c1b2f 100644
+--- a/config/mk-shdefs.in
++++ b/config/mk-shdefs.in
+@@ -130,7 +130,7 @@ configure() {
+ 
+ set -x
+ exec 9>&2
+-tmp=$(mktemp --suffix=.tdir -d -t shdefs-XXXXXXXXX)
++tmp=$(mktemp -d -t shdefs-XXXXXXXXX)
+ exec 2>> $tmp/mk-shdef.log
+ init $0 $1
+ mk_config
+-- 
+cgit v1.2.1
+
