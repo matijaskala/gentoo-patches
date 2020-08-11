@@ -19,9 +19,9 @@
 +#ifndef __GLIBC__
 +#include <pthread.h>
 +#endif
- #include <signal.h>
  #include <stdbool.h>
  #include <stdio.h>
+ #include <stdlib.h>
 @@ -1100,9 +1100,13 @@
                  if (!installed) {
                          /* __register_atfork() either returns 0 or -ENOMEM, in its glibc implementation. Since it's
