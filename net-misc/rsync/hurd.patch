@@ -4,8 +4,8 @@
  $as_echo "no" >&6; }
  else
      case "$host_os" in
--    *linux*|*netbsd*)
-+    *linux*|*netbsd*|*gnu*)
+-    *linux*|*netbsd*|*cygwin*)
++    *linux*|*netbsd*|*cygwin*|*gnu*)
  	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: Using Linux xattrs" >&5
  $as_echo "Using Linux xattrs" >&6; }
  
