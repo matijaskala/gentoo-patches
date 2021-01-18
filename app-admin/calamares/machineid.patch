@@ -1,0 +1,11 @@
+--- a/src/modules/machineid/Workers.cpp
++++ b/src/modules/machineid/Workers.cpp
+@@ -158,7 +158,7 @@ createSystemdMachineId( const QString& rootMountPoint, const QString& fileName )
+ {
+     Q_UNUSED( rootMountPoint )
+     Q_UNUSED( fileName )
+-    return runCmd( QStringList { QStringLiteral( "systemd-machine-id-setup" ) } );
++    return runCmd( QStringList { QStringLiteral( "dbus-uuidgen" ), QStringLiteral( "--ensure=/etc/machine-id" ) } );
+ }
+ 
+ Calamares::JobResult
