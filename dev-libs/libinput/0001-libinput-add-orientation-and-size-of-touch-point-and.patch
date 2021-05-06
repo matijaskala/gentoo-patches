@@ -1479,14 +1479,14 @@ Signed-off-by: Andreas Pokorny <andreas.pokorny@canonical.com>
  START_TEST(touch_release_on_unplug)
  {
 @@ -844,9 +1083,11 @@ litest_setup_tests_touch(void)
- 	litest_add("touch:protocol a", touch_protocol_a_init, LITEST_PROTOCOL_A, LITEST_ANY);
- 	litest_add("touch:protocol a", touch_protocol_a_touch, LITEST_PROTOCOL_A, LITEST_ANY);
- 	litest_add("touch:protocol a", touch_protocol_a_2fg_touch, LITEST_PROTOCOL_A, LITEST_ANY);
-+	litest_add("touch:properties", touch_point_properties, LITEST_TOUCH|LITEST_ELLIPSE, LITEST_ANY);
-+	litest_add("touch:properties", touch_point_no_minor_or_orientation, LITEST_TOUCH|LITEST_ELLIPSE, LITEST_ANY);
+ 	litest_add(touch_protocol_a_init, LITEST_PROTOCOL_A, LITEST_ANY);
+ 	litest_add(touch_protocol_a_touch, LITEST_PROTOCOL_A, LITEST_ANY);
+ 	litest_add(touch_protocol_a_2fg_touch, LITEST_PROTOCOL_A, LITEST_ANY);
++	litest_add(touch_point_properties, LITEST_TOUCH|LITEST_ELLIPSE, LITEST_ANY);
++	litest_add(touch_point_no_minor_or_orientation, LITEST_TOUCH|LITEST_ELLIPSE, LITEST_ANY);
  
- 	litest_add_ranged("touch:state", touch_initial_state, LITEST_TOUCH, LITEST_PROTOCOL_A, &axes);
+ 	litest_add_ranged(touch_initial_state, LITEST_TOUCH, LITEST_PROTOCOL_A, &axes);
  
- 	litest_add("touch:time", touch_time_usec, LITEST_TOUCH, LITEST_TOUCHPAD);
+ 	litest_add(touch_time_usec, LITEST_TOUCH, LITEST_TOUCHPAD);
  
- 	litest_add_for_device("touch:fuzz", touch_fuzz, LITEST_MULTITOUCH_FUZZ_SCREEN);
+ 	litest_add_for_device(touch_fuzz, LITEST_MULTITOUCH_FUZZ_SCREEN);
