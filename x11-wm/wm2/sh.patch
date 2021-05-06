@@ -1,0 +1,11 @@
+--- a/Makefile
++++ b/Makefile
+@@ -13,7 +13,7 @@
+ 	$(CCC) -c $(CFLAGS) $<
+ 
+ wm2:	$(OBJECTS)
+-	mv -f wm2 wm2.old >& /dev/null || true
++	mv -f wm2 wm2.old || true
+ 	$(CCC) -o wm2 $(OBJECTS) $(LIBS)
+ 
+ depend:

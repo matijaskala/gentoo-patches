@@ -1,0 +1,9 @@
+--- a/org.kde.kimagemapeditor.desktop
++++ b/org.kde.kimagemapeditor.desktop
+@@ -1,6 +1,5 @@
+ [Desktop Entry]
+ Type=Application
+-MimeType=text/html;
+ Exec=kimagemapeditor -qwindowtitle %c %i %F
+ Icon=kimagemapeditor
+ Terminal=false
