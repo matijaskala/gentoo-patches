@@ -1,5 +1,5 @@
---- kwin-5.12.5/plugins/kdecorations/aurorae/themes/plastik/package/contents/ui/main.qml
-+++ kwin-5.12.5/plugins/kdecorations/aurorae/themes/plastik/package/contents/ui/main.qml
+--- kwin-5.22.5/src/plugins/kdecorations/aurorae/themes/plastik/package/contents/ui/main.qml
++++ kwin-5.22.5/src/plugins/kdecorations/aurorae/themes/plastik/package/contents/ui/main.qml
 @@ -77,9 +77,8 @@
          }
          root.animateButtons = decoration.readConfig("animateButtons", true);
@@ -10,8 +10,8 @@
      }
      ColorHelper {
          id: colorHelper
---- kwin-5.12.5/plugins/kdecorations/aurorae/themes/plastik/package/contents/ui/PlastikButton.qml
-+++ kwin-5.12.5/plugins/kdecorations/aurorae/themes/plastik/package/contents/ui/PlastikButton.qml
+--- kwin-5.22.5/src/plugins/kdecorations/aurorae/themes/plastik/package/contents/ui/PlastikButton.qml
++++ kwin-5.22.5/src/plugins/kdecorations/aurorae/themes/plastik/package/contents/ui/PlastikButton.qml
 @@ -21,6 +21,10 @@
  DecorationButton {
      id: button
