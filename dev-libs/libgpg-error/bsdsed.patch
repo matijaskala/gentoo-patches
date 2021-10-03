@@ -1,0 +1,11 @@
+--- libgpg-error-1.42/src/gpg-error.m4	2021-03-04 11:05:29.000000000 +0100
++++ libgpg-error-1.42/src/gpg-error.m4	2021-10-03 18:15:43.360360546 +0200
+@@ -80,7 +80,7 @@
+     #   Fedora/openSUSE style: /usr/lib, /usr/lib32 or /usr/lib64
+     # It is assumed that CC is specified to the one of host on cross build.
+     if libdir_candidates=$(${CC:-cc} -print-search-dirs | \
+-          sed -n -e "/^libraries/{s/libraries: =//;s/:/\n/gp}"); then
++          sed -n -e "/^libraries/{s/libraries: =//;s/:/\n/gp;}"); then
+       # From the output of -print-search-dirs, select valid pkgconfig dirs.
+       libdir_candidates=$(for dir in $libdir_candidates; do
+         if p=$(cd $dir 2>/dev/null && pwd); then
