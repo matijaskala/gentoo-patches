@@ -1,0 +1,52 @@
+diff --git a/defaults/initrd.scripts b/defaults/initrd.scripts
+index fa24245..fb2e4af 100644
+--- a/defaults/initrd.scripts
++++ b/defaults/initrd.scripts
+@@ -1452,9 +1452,25 @@ setup_keymap() {
+ }
+ 
+ setup_locale() {
++	if [ -n "${xkb_layout}" ]
++	then
++		mkdir -p "${NEW_ROOT}"/etc/X11/xorg.conf.d
++		cat > "${NEW_ROOT}"/etc/X11/xorg.conf.d/00-keyboard.conf << EOF
++Section "InputClass"
++       Identifier "keyboard"
++       MatchIsKeyboard "yes"
++       Option "XkbLayout" "${xkb_layout}"
++EndSection
++EOF
++	fi
+ 	if [ -n "${locale}" ]
+ 	then
+ 		echo "LANG=${locale}" >${NEW_ROOT}/etc/sysconfig/locale
++		echo "LANG=${locale}" >${NEW_ROOT}/etc/env.d/02locale
++		sed -i "/\<LANG\>.'/d" ${NEW_ROOT}/etc/*.env
++		echo "export LANG='${locale}'" >> ${NEW_ROOT}/etc/profile.env
++		echo "setenv LANG '${locale}'" >> ${NEW_ROOT}/etc/csh.env
++		printf "[User]\nLanguage=${locale}\n" > ${NEW_ROOT}/var/lib/AccountsService/users/$(grep :1000: ${NEW_ROOT}/etc/passwd | cut -d: -f1)
+ 	fi
+ }
+ 
+@@ -1520,6 +1536,7 @@ chooseKeymap() {
+ 
+ 		run mkdir -p /etc/sysconfig
+ 		echo "XKEYBOARD=${keymap}" > /etc/sysconfig/keyboard
++		sed -i "s/keymap=.*/keymap=\"${keymap}\"/" ${NEW_ROOT}/etc/conf.d/keymaps
+ 		splash set_msg "Set keymap to '${keymap}'"
+ 	elif [ -z "${keymap}" ]
+ 	then
+diff --git a/defaults/linuxrc b/defaults/linuxrc
+index 90b0399..f251939 100644
+--- a/defaults/linuxrc
++++ b/defaults/linuxrc
+@@ -395,6 +395,9 @@ do
+ 		keymap=*)
+ 			keymap=${x#*=}
+ 		;;
++		xkb_layout=*)
++			xkb_layout=${x#*=}
++		;;
+ 		locale=*)
+ 			locale=${x#*=}
+ 		;;

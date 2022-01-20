@@ -1,0 +1,67 @@
+diff --git a/defaults/initrd.scripts b/defaults/initrd.scripts
+index 7eac892..fa24245 100644
+--- a/defaults/initrd.scripts
++++ b/defaults/initrd.scripts
+@@ -821,7 +821,7 @@ setup_overlayfs() {
+ 	local static=/mnt/livecd
+ 
+ 	run_debug_shell overlayfs
+-	for i in "${overlay}" "${static}"
++	for i in "${overlay}" "${static}" "/mnt/multilivecd"
+ 	do
+ 		[ ! -d "${i}" ] && run mkdir -p "${i}"
+ 	done
+@@ -830,6 +830,9 @@ setup_overlayfs() {
+ 	run modprobe overlay >/dev/null 2>&1
+ 	checkfs overlay
+ 
++	[ -n "${MULTILIVE_SUBDIR}" ] && \
++		mount -t squashfs -o loop,ro "${CDROOT_PATH}/${LOOPEXT}${LOOP}" "/mnt/multilivecd" && \
++		mount -o rbind "/mnt/multilivecd/${MULTILIVE_SUBDIR}" "${static}" || \
+ 	mount -t squashfs -o loop,ro "${CDROOT_PATH}/${LOOPEXT}${LOOP}" "${static}"
+ 	mount -t tmpfs none "${overlay}"
+ 	mkdir "${upperdir}" "${workdir}"
+@@ -2646,7 +2649,7 @@ setup_squashfs_aufs() {
+ 	# Setup aufs directories and vars
+ 	aufs_rw_branch=/mnt/aufs-rw-branch aufs_ro_branch=/mnt/livecd
+ 
+-	for dir in ${aufs_rw_branch} ${aufs_ro_branch}
++	for dir in ${aufs_rw_branch} ${aufs_ro_branch} /mnt/multilivecd
+ 	do
+ 		[ ! -d "${dir}" ] && run mkdir -p "${dir}"
+ 	done
+@@ -2655,6 +2658,9 @@ setup_squashfs_aufs() {
+ 	run modprobe aufs >/dev/null 2>&1
+ 	checkfs aufs
+ 
++	[ -n "${MULTILIVE_SUBDIR}" ] && \
++		mount -t squashfs -o loop,ro "${CDROOT_PATH}/${LOOPEXT}${LOOP}" "/mnt/multilivecd" && \
++		mount -o rbind "/mnt/multilivecd/${MULTILIVE_SUBDIR}" "${aufs_ro_branch}" || \
+ 	run mount -t squashfs -o loop,ro "${CDROOT_PATH}/${LOOPEXT}${LOOP}" "${aufs_ro_branch}"
+ 	run mount -t tmpfs none "${aufs_rw_branch}"
+ 	run mount -t aufs -o "br:${aufs_rw_branch}:${aufs_ro_branch}" aufs "${NEW_ROOT}"
+diff --git a/defaults/linuxrc b/defaults/linuxrc
+index 6ede740..90b0399 100644
+--- a/defaults/linuxrc
++++ b/defaults/linuxrc
+@@ -449,6 +449,9 @@ do
+ 		verify)
+ 			VERIFY=1
+ 		;;
++		multilive_subdir\=*)
++			MULTILIVE_SUBDIR=${x#*=}
++		;;
+ 	esac
+ done
+ 
+@@ -1081,6 +1084,10 @@ then
+ 				# Upgrade to cached version if possible
+ 				[ "${DO_cache}" -a -f "${_CACHED_SQUASHFS_PATH}" ] \
+ 					&& _squashfs_path=${_CACHED_SQUASHFS_PATH}
++				[ -n "${MULTILIVE_SUBDIR}" ] && \
++					mkdir -p /mnt/multilivecd && \
++					mount -t squashfs -o loop,ro "${_squashfs_path}" "/mnt/multilivecd" && \
++					mount -o rbind "/mnt/multilivecd/${MULTILIVE_SUBDIR}" "${NEW_ROOT}/mnt/livecd" || \
+ 				mount -t squashfs -o loop,ro "${_squashfs_path}" "${NEW_ROOT}/mnt/livecd" || {
+ 					bad_msg "Squashfs filesystem could not be mounted, dropping into shell."
+ 					if [ -e /proc/filesystems ]
