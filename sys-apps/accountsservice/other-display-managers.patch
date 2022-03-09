@@ -121,7 +121,7 @@ Support setting/reading autologin setings for LightDM, LXDM, SDDM
  {
          GKeyFile *keyfile;
          GError *local_error;
-@@ -1312,22 +1325,129 @@ load_autologin (Daemon      *daemon,
+@@ -1312,12 +1325,110 @@ load_autologin (Daemon      *daemon,
          return TRUE;
  }
  
@@ -236,27 +236,6 @@ Support setting/reading autologin setings for LightDM, LXDM, SDDM
          g_autoptr(GKeyFile) keyfile = NULL;
          g_autofree gchar *data = NULL;
          gboolean result;
-+        GError *local_error = NULL;
-+
-+        if (!g_file_test ("/etc/gdm", G_FILE_TEST_EXISTS))
-+                return TRUE; /* not an error, just not installed */
- 
-         keyfile = g_key_file_new ();
-         if (!g_key_file_load_from_file (keyfile,
-                                         PATH_GDM_CUSTOM,
-                                         G_KEY_FILE_KEEP_COMMENTS,
--                                        error)) {
--                return FALSE;
-+                                        &local_error)) {
-+                /* It's OK for custom.conf to not exist, we will make it */
-+                if (!g_error_matches (local_error, G_FILE_ERROR, G_FILE_ERROR_NOENT)) {
-+                        g_propagate_error (error, local_error);
-+                        return FALSE;
-+                }
-+                g_error_free (local_error);
-         }
- 
-         g_key_file_set_string (keyfile, "daemon", "AutomaticLoginEnable", enabled ? "True" : "False");
 @@ -1343,6 +1427,142 @@
          return result;
  }
