@@ -1,0 +1,187 @@
+--- a/src/daemon.c	2023-03-27 21:27:39.000000000 +0200
++++ b/src/daemon.c	2023-06-17 16:02:38.205060105 +0200
+@@ -67,6 +67,8 @@
+ {
+         DISPLAY_MANAGER_TYPE_NONE = -1,
+         DISPLAY_MANAGER_TYPE_GDM,
++        DISPLAY_MANAGER_TYPE_SDDM,
++        DISPLAY_MANAGER_TYPE_LXDM,
+         DISPLAY_MANAGER_TYPE_LIGHTDM
+ } DisplayManagerType;
+ 
+@@ -197,6 +199,10 @@
+                         return DISPLAY_MANAGER_TYPE_LIGHTDM;
+                 else if (g_strcmp0 (basename, "gdm.service") == 0)
+                         return DISPLAY_MANAGER_TYPE_GDM;
++                else if (g_strcmp0 (basename, "sddm.service") == 0)
++                        return DISPLAY_MANAGER_TYPE_SDDM;
++                else if (g_strcmp0 (basename, "lxdm.service") == 0)
++                        return DISPLAY_MANAGER_TYPE_LXDM;
+         }
+ 
+         return DISPLAY_MANAGER_TYPE_NONE;
+@@ -872,6 +878,10 @@
+                 dm_path = g_strdup (PATH_LIGHTDM_CONF);
+         else if (dm_type == DISPLAY_MANAGER_TYPE_GDM)
+                 dm_path = g_strdup (PATH_GDM_CUSTOM);
++        else if (dm_type == DISPLAY_MANAGER_TYPE_SDDM)
++                dm_path = g_strdup ("/etc/sddm.conf");
++        else if (dm_type == DISPLAY_MANAGER_TYPE_LXDM)
++                dm_path = g_strdup ("/etc/lxdm/lxdm.conf");
+ 
+         priv->dm_monitor = setup_monitor (daemon,
+                                           dm_path,
+@@ -1789,6 +1799,62 @@
+         return TRUE;
+ }
+ 
++static gboolean
++load_autologin_sddm (Daemon   *daemon,
++                        gchar   **name,
++                        gboolean *enabled,
++                        GError  **error)
++{
++        g_autoptr (GKeyFile) keyfile = NULL;
++        GError *local_error = NULL;
++
++        keyfile = g_key_file_new ();
++        if (!g_key_file_load_from_file (keyfile,
++                                        "/etc/sddm.conf",
++                                        G_KEY_FILE_KEEP_COMMENTS,
++                                        error)) {
++                return FALSE;
++        }
++
++        *name = g_key_file_get_string (keyfile, "Autologin", "User", &local_error);
++        if (local_error) {
++                g_propagate_error (error, local_error);
++                return FALSE;
++        }
++
++        *enabled = ((*name) && (*name)[0] != 0);
++
++        return TRUE;
++}
++
++static gboolean
++load_autologin_lxdm (Daemon   *daemon,
++                        gchar   **name,
++                        gboolean *enabled,
++                        GError  **error)
++{
++        g_autoptr (GKeyFile) keyfile = NULL;
++        GError *local_error = NULL;
++
++        keyfile = g_key_file_new ();
++        if (!g_key_file_load_from_file (keyfile,
++                                        "/etc/lxdm/lxdm.conf",
++                                        G_KEY_FILE_KEEP_COMMENTS,
++                                        error)) {
++                return FALSE;
++        }
++
++        *name = g_key_file_get_string (keyfile, "base", "autologin", &local_error);
++        if (local_error) {
++                g_propagate_error (error, local_error);
++                return FALSE;
++        }
++
++        *enabled = ((*name) && (*name)[0] != 0);
++
++        return TRUE;
++}
++
+ gboolean
+ load_autologin (Daemon   *daemon,
+                 gchar   **name,
+@@ -1802,6 +1868,10 @@
+                 return load_autologin_lightdm (daemon, name, enabled, error);
+         else if (dm_type == DISPLAY_MANAGER_TYPE_GDM)
+                 return load_autologin_gdm (daemon, name, enabled, error);
++        else if (dm_type == DISPLAY_MANAGER_TYPE_SDDM)
++                return load_autologin_sddm (daemon, name, enabled, error);
++        else if (dm_type == DISPLAY_MANAGER_TYPE_LXDM)
++                return load_autologin_lxdm (daemon, name, enabled, error);
+ 
+         g_set_error (error, G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED, _ ("Unsupported Display Manager"));
+ 
+@@ -1872,6 +1942,68 @@
+ }
+ 
+ static gboolean
++save_autologin_sddm (Daemon      *daemon,
++                        const gchar *name,
++                        gboolean     enabled,
++                        GError     **error)
++{
++        g_autoptr (GKeyFile) keyfile = NULL;
++        g_autofree gchar *data = NULL;
++        gboolean result;
++        g_autoptr (GError) local_error = NULL;
++
++        keyfile = g_key_file_new ();
++        if (!g_key_file_load_from_file (keyfile,
++                                        "/etc/sddm.conf",
++                                        G_KEY_FILE_KEEP_COMMENTS,
++                                        &local_error)) {
++                /* It's OK for lightdm.conf to not exist, we will make it */
++                if (!g_error_matches (local_error, G_FILE_ERROR, G_FILE_ERROR_NOENT)) {
++                        g_propagate_error (error, g_steal_pointer (&local_error));
++                        return FALSE;
++                }
++        }
++
++        g_key_file_set_string (keyfile, "Autologin", "User", enabled ? name : "");
++
++        data = g_key_file_to_data (keyfile, NULL, NULL);
++        result = g_file_set_contents ("/etc/sddm.conf", data, -1, error);
++
++        return result;
++}
++
++static gboolean
++save_autologin_lxdm (Daemon      *daemon,
++                        const gchar *name,
++                        gboolean     enabled,
++                        GError     **error)
++{
++        g_autoptr (GKeyFile) keyfile = NULL;
++        g_autofree gchar *data = NULL;
++        gboolean result;
++        g_autoptr (GError) local_error = NULL;
++
++        keyfile = g_key_file_new ();
++        if (!g_key_file_load_from_file (keyfile,
++                                        "/etc/lxdm/lxdm.conf",
++                                        G_KEY_FILE_KEEP_COMMENTS,
++                                        &local_error)) {
++                /* It's OK for lightdm.conf to not exist, we will make it */
++                if (!g_error_matches (local_error, G_FILE_ERROR, G_FILE_ERROR_NOENT)) {
++                        g_propagate_error (error, g_steal_pointer (&local_error));
++                        return FALSE;
++                }
++        }
++
++        g_key_file_set_string (keyfile, "base", "autologin", enabled ? name : "");
++
++        data = g_key_file_to_data (keyfile, NULL, NULL);
++        result = g_file_set_contents ("/etc/lxdm/lxdm.conf", data, -1, error);
++
++        return result;
++}
++
++static gboolean
+ save_autologin (Daemon      *daemon,
+                 const gchar *name,
+                 gboolean     enabled,
+@@ -1884,6 +2016,10 @@
+                 return save_autologin_lightdm (daemon, name, enabled, error);
+         else if (dm_type == DISPLAY_MANAGER_TYPE_GDM)
+                 return save_autologin_gdm (daemon, name, enabled, error);
++        else if (dm_type == DISPLAY_MANAGER_TYPE_SDDM)
++                return save_autologin_sddm (daemon, name, enabled, error);
++        else if (dm_type == DISPLAY_MANAGER_TYPE_LXDM)
++                return save_autologin_lxdm (daemon, name, enabled, error);
+ 
+         return FALSE;
+ }
