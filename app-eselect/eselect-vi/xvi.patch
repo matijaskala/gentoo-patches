@@ -5,6 +5,6 @@
  			"${EROOT}"/usr/bin/qvim \
  			"${EROOT}"/usr/bin/xvile \
 +			"${EROOT}"/usr/bin/xvi \
+ 			"${EROOT}"/usr/bin/vis \
  			"${EROOT}"/usr/bin/pyvim \
  			"${EROOT}"/bin/busybox \
- 		; do
