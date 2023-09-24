@@ -1,12 +1,12 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index b3a292f..8b4e949 100644
+index b3a292f..9d77e47 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -47,10 +47,14 @@ set_package_properties(LibLZMA PROPERTIES
  find_package(PkgConfig)
  if (PkgConfig_FOUND)
      pkg_check_modules(LibZstd IMPORTED_TARGET "libzstd")
-+    pkg_check_modules(Brotli IMPORTED_TARGET "libbrotlidec;libxxhash;libmd")
++    pkg_check_modules(Brotli IMPORTED_TARGET "libbrotlidec;libbrotlienc;libxxhash;libmd")
  endif()
  add_feature_info(LibZstd LibZstd_FOUND
                  "Support for zstd compressed files and data streams"
@@ -1206,10 +1206,10 @@ index 0000000..dc126a5
 +#endif /* !_SYS_GSB_CRC32_H_ */
 diff --git a/src/kbrfilter.cpp b/src/kbrfilter.cpp
 new file mode 100644
-index 0000000..e601e58
+index 0000000..edb68f3
 --- /dev/null
 +++ b/src/kbrfilter.cpp
-@@ -0,0 +1,627 @@
+@@ -0,0 +1,680 @@
 +/* This file is part of the KDE libraries
 +   SPDX-FileCopyrightText: 2023 Matija Skala <mskala@gmx.org>
 +
@@ -1222,6 +1222,7 @@ index 0000000..e601e58
 +#if HAVE_BROTLI_SUPPORT
 +
 +#include <brotli/decode.h>
++#include <brotli/encode.h>
 +#include <xxhash.h>
 +#include <sha256.h>
 +
@@ -1240,6 +1241,8 @@ index 0000000..e601e58
 +        : isInitialized(false)
 +    {
 +        mode = 0;
++        availIn = availOut = 0;
++        nextIn = nextOut = nullptr;
 +    }
 +
 +    unsigned const char *nextIn;
@@ -1274,8 +1277,6 @@ index 0000000..e601e58
 +KBrFilter::KBrFilter()
 +    : d(new Private)
 +{
-+    d->availIn = d->availOut = 0;
-+    d->nextIn = d->nextOut = nullptr;
 +}
 +
 +KBrFilter::~KBrFilter()
@@ -1303,6 +1304,7 @@ index 0000000..e601e58
 +    d->continueAt = 0;
 +    if (mode == QIODevice::ReadOnly) {
 +    } else if (mode == QIODevice::WriteOnly) {
++        return false;
 +    } else {
 +        // qCWarning(KArchiveLog) << "Unsupported mode " << mode << ". Only QIODevice::ReadOnly and QIODevice::WriteOnly supported";
 +        return false;
@@ -1366,9 +1368,30 @@ index 0000000..e601e58
 +    return true;
 +}
 +
-+bool KBrFilter::writeHeader(const QByteArray &)
++bool KBrFilter::writeHeader(const QByteArray &filename)
 +{
-+    return false;
++    d->nextOut[0] = 0xce;
++    d->nextOut[1] = 0xb2;
++    d->nextOut[2] = 0xcf;
++    d->nextOut[3] = 0x81;
++    d->nextOut[4] = 0113;
++    d->nextOut[5] = filename.isNull() ? 0 : 2;
++    d->nextOut += 6;
++    d->availOut -= 6;
++    if (!filename.isNull()) {
++        int i;
++        for (i = filename.length(); i > 0x7f; i <<= 7) {
++            *d->nextOut++ = i & 0x7f;
++            d->availOut--;
++        }
++        *d->nextOut++ = i | 0x80;
++        d->availOut--;
++        for (char c: filename) {
++            *d->nextOut++ = c;
++            d->availOut--;
++        }
++    }
++    return true;
 +}
 +
 +KBrFilter::Result KBrFilter::uncompress()
@@ -1833,7 +1856,37 @@ index 0000000..e601e58
 +
 +KBrFilter::Result KBrFilter::compress(bool finish)
 +{
-+    return KFilterBase::Error;
++    size_t encodedSize = d->availOut;
++    if (!BrotliEncoderCompress(9, BROTLI_DEFAULT_WINDOW, BROTLI_DEFAULT_MODE, d->availIn, d->nextIn, &encodedSize, d->nextOut))
++        return KFilterBase::Error;
++    d->nextOut += encodedSize;
++    d->availOut -= encodedSize;
++    for (d->tmp1 = d->availIn; d->tmp1 > 0x7f; d->tmp1 <<= 7) {
++        *d->nextOut++ = d->tmp1 & 0x7f;
++        d->availOut--;
++    }
++    *d->nextOut++ = d->tmp1 | 0x80;
++    d->availOut--;
++    quint64 hash = XXH64(d->nextIn, d->availIn, 0);
++    for (d->tmp1 = hash; d->tmp1 > 0x7f; d->tmp1 <<= 7) {
++        *d->nextOut++ = d->tmp1 & 0x7f;
++        d->availOut--;
++    }
++    *d->nextOut++ = d->tmp1 | 0x80;
++    d->availOut--;
++    d->nextIn += d->availIn;
++    d->availIn = 0;
++    if (finish) {
++        *d->nextOut++ = 0x27;
++        d->availOut--;
++        return KFilterBase::End;
++    }
++    else {
++        *d->nextOut++ = 0113;
++        *d->nextOut++ = 0;
++        d->availOut -= 2;
++        return KFilterBase::Ok;
++    }
 +}
 +
 +#endif /* HAVE_BZIP2_SUPPORT */
@@ -1890,7 +1943,7 @@ index 0000000..3c5e4bf
 +
 +#endif
 diff --git a/src/kcompressiondevice.cpp b/src/kcompressiondevice.cpp
-index aafc739..8889e0c 100644
+index aafc739..47c9e60 100644
 --- a/src/kcompressiondevice.cpp
 +++ b/src/kcompressiondevice.cpp
 @@ -23,6 +23,9 @@
@@ -1921,7 +1974,7 @@ index aafc739..8889e0c 100644
      }
 +#endif
 +#if HAVE_BROTLI_SUPPORT
-+    if (mimeType == QLatin1String("application/x-brzip")) {
++    if (mimeType == QLatin1String("application/brotli") || mimeType == QLatin1String("application/x-brzip")) {
 +        return KCompressionDevice::Brotli;
 +    }
  #endif
