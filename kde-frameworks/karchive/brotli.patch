@@ -1206,10 +1206,10 @@ index 0000000..dc126a5
 +#endif /* !_SYS_GSB_CRC32_H_ */
 diff --git a/src/kbrfilter.cpp b/src/kbrfilter.cpp
 new file mode 100644
-index 0000000..edb68f3
+index 0000000..b0d28fa
 --- /dev/null
 +++ b/src/kbrfilter.cpp
-@@ -0,0 +1,680 @@
+@@ -0,0 +1,707 @@
 +/* This file is part of the KDE libraries
 +   SPDX-FileCopyrightText: 2023 Matija Skala <mskala@gmx.org>
 +
@@ -1259,6 +1259,7 @@ index 0000000..edb68f3
 +    quint32 crc32cFull;
 +    SHA256_CTX sha256;
 +    BrotliDecoderState *decoder;
++    BrotliEncoderState *encoder;
 +    quint64 totalSize;
 +    quint64 blockSize;
 +    quint64 offset;
@@ -1304,7 +1305,6 @@ index 0000000..edb68f3
 +    d->continueAt = 0;
 +    if (mode == QIODevice::ReadOnly) {
 +    } else if (mode == QIODevice::WriteOnly) {
-+        return false;
 +    } else {
 +        // qCWarning(KArchiveLog) << "Unsupported mode " << mode << ". Only QIODevice::ReadOnly and QIODevice::WriteOnly supported";
 +        return false;
@@ -1391,6 +1391,9 @@ index 0000000..edb68f3
 +            d->availOut--;
 +        }
 +    }
++    d->encoder = BrotliEncoderCreateInstance(NULL, NULL, NULL);
++    BrotliEncoderSetParameter(d->encoder, BROTLI_PARAM_QUALITY, 9);
++    XXH64_reset(d->xxh64, 0);
 +    return true;
 +}
 +
@@ -1856,37 +1859,61 @@ index 0000000..edb68f3
 +
 +KBrFilter::Result KBrFilter::compress(bool finish)
 +{
-+    size_t encodedSize = d->availOut;
-+    if (!BrotliEncoderCompress(9, BROTLI_DEFAULT_WINDOW, BROTLI_DEFAULT_MODE, d->availIn, d->nextIn, &encodedSize, d->nextOut))
++    size_t uncoded = d->availIn;
++    size_t encodedSize;
++    switch (d->continueAt) {
++        case 0:
++            goto cont0;
++        case 1:
++            goto cont1;
++        case 2:
++            goto cont2;
++        case 3:
++            goto cont3;
++        case 4:
++            goto cont4;
++    }
++    cont0:
++    if (!BrotliEncoderCompressStream(d->encoder, finish ? BROTLI_OPERATION_FINISH : BROTLI_OPERATION_PROCESS, &uncoded, &d->nextIn, &d->availOut, &d->nextOut, &encodedSize))
 +        return KFilterBase::Error;
-+    d->nextOut += encodedSize;
-+    d->availOut -= encodedSize;
-+    for (d->tmp1 = d->availIn; d->tmp1 > 0x7f; d->tmp1 <<= 7) {
-+        *d->nextOut++ = d->tmp1 & 0x7f;
-+        d->availOut--;
-+    }
-+    *d->nextOut++ = d->tmp1 | 0x80;
-+    d->availOut--;
-+    quint64 hash = XXH64(d->nextIn, d->availIn, 0);
-+    for (d->tmp1 = hash; d->tmp1 > 0x7f; d->tmp1 <<= 7) {
-+        *d->nextOut++ = d->tmp1 & 0x7f;
-+        d->availOut--;
-+    }
-+    *d->nextOut++ = d->tmp1 | 0x80;
-+    d->availOut--;
-+    d->nextIn += d->availIn;
-+    d->availIn = 0;
-+    if (finish) {
-+        *d->nextOut++ = 0x27;
-+        d->availOut--;
-+        return KFilterBase::End;
-+    }
-+    else {
-+        *d->nextOut++ = 0113;
-+        *d->nextOut++ = 0;
-+        d->availOut -= 2;
++    XXH64_update(d->xxh64, d->nextIn - d->availIn + uncoded, d->availIn - uncoded);
++    d->offset += encodedSize;
++    d->totalSize += d->availIn - uncoded;
++    d->availIn = uncoded;
++    if (!finish)
 +        return KFilterBase::Ok;
++    for (d->tmp1 = d->totalSize; d->tmp1 > 0x7f; d->tmp1 >>= 7) {
++        d->continueAt = 1;
++        if (d->availOut == 0)
++            return KFilterBase::Ok;
++        cont1:
++        *d->nextOut++ = d->tmp1 & 0x7f;
++        d->availOut--;
 +    }
++    d->continueAt = 2;
++    if (d->availOut == 0)
++        return KFilterBase::Ok;
++    cont2:
++    *d->nextOut++ = d->tmp1 | 0x80;
++    d->availOut--;
++    d->tmp2 = XXH64_digest(d->xxh64);
++    for (d->tmp1 = 0; d->tmp1 < 8; d->tmp1++) {
++        d->continueAt = 3;
++        if (d->availOut == 0)
++            return KFilterBase::Ok;
++        cont3:
++        *d->nextOut++ = d->tmp2 & 0xff;
++        d->availOut--;
++        d->tmp2 >>= 8;
++    }
++    d->continueAt = 4;
++    if (d->availOut == 0)
++        return KFilterBase::Ok;
++    cont4:
++    *d->nextOut++ = 0x27;
++    d->availOut--;
++    BrotliEncoderDestroyInstance(d->encoder);
++    return KFilterBase::End;
 +}
 +
 +#endif /* HAVE_BZIP2_SUPPORT */
