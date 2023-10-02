@@ -1,0 +1,17 @@
+--- a/data/freedesktop.org.xml.in	2023-09-23 01:15:34.010122467 +0200
++++ b/data/freedesktop.org.xml.in	2023-09-23 01:16:40.032777072 +0200
+@@ -2982,6 +2982,14 @@
+     </magic>
+     <glob pattern="*.lz"/>
+   </mime-type>
++  <mime-type type="application/x-brotli">
++    <comment>Brotli archive</comment>
++    <generic-icon name="package-x-generic"/>
++    <magic priority="60">
++      <match type="string" value="βρ" offset="0"/>
++    </magic>
++    <glob pattern="*.br"/>
++  </mime-type>
+   <mime-type type="application/x-lzip-compressed-tar">
+     <comment>Tar archive (lzip-compressed)</comment>
+     <generic-icon name="package-x-generic"/>
