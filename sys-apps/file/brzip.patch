@@ -5,7 +5,7 @@
  >4	byte		x		\b, version: %d
  
 +0	string		βρ		brzip compressed data
-+!:mime	application/x-brotli
++!:mime	application/brotli
 +!:ext br
 +
  # squeeze and crunch
