@@ -5,7 +5,7 @@ index b3a292f..9d77e47 100644
 @@ -47,10 +47,14 @@ set_package_properties(LibLZMA PROPERTIES
  find_package(PkgConfig)
  if (PkgConfig_FOUND)
-     pkg_check_modules(LibZstd IMPORTED_TARGET "libzstd")
+     pkg_check_modules(LibZstd ${LIBZSTD_REQUIRED_TYPE} IMPORTED_TARGET "libzstd")
 +    pkg_check_modules(Brotli IMPORTED_TARGET "libbrotlidec;libbrotlienc;libxxhash;libmd")
  endif()
  add_feature_info(LibZstd LibZstd_FOUND
@@ -34,8 +34,8 @@ index c520d3b..ab9b607 100644
  endif()
  
 +if (Brotli_FOUND)
-+    target_sources(KF5Archive PRIVATE kbrfilter.cpp gsb_crc32.c crc32_sse42.c)
-+    target_link_libraries(KF5Archive PRIVATE PkgConfig::Brotli)
++    target_sources(KF6Archive PRIVATE kbrfilter.cpp gsb_crc32.c crc32_sse42.c)
++    target_link_libraries(KF6Archive PRIVATE PkgConfig::Brotli)
 +endif()
 +
  
@@ -2001,7 +2001,7 @@ index aafc739..47c9e60 100644
      }
 +#endif
 +#if HAVE_BROTLI_SUPPORT
-+    if (mimeType == QLatin1String("application/brotli") || mimeType == QLatin1String("application/x-brzip")) {
++    if (mimeType == QLatin1String("application/x-brotli")) {
 +        return KCompressionDevice::Brotli;
 +    }
  #endif
@@ -2027,7 +2027,8 @@ index 6127e9c..0ab9ce5 100644
 @@ -37,6 +37,7 @@ public:
          Xz,
          None,
-         Zstd, ///< @since 5.82
+         Zstd,
+         Lz,
 +        Brotli,
      };
  
